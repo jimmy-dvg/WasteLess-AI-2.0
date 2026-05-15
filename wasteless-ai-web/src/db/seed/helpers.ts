@@ -44,7 +44,7 @@ export function randomBoolean(probability = 0.5): boolean {
 /**
  * Pick random element from array
  */
-export function randomElement<T>(array: T[]): T {
+export function randomElement<T>(array: T[] | readonly T[]): T {
   return array[Math.floor(Math.random() * array.length)];
 }
 
@@ -342,3 +342,4 @@ export function getAllProducts(): typeof productDefinitions.dairy {
     ...productDefinitions.beverages,
   ];
 }
+

@@ -78,7 +78,7 @@ export async function seedShoppingListItems(
         shopping_list_id: list.id,
         product_id: deterministicId(`product:${product.name}`),
         name: product.name,
-        quantity: randomFloat(1, 5, 1),
+        quantity: randomFloat(1, 5, 1).toString(),
         unit: unit,
         checked: randomBoolean(0.4),
         created_at: list.created_at,
@@ -103,4 +103,8 @@ export async function seedShoppingListItems(
     throw error;
   }
 }
+
+
+
+
 

@@ -35,7 +35,7 @@ export async function seedUsers() {
 
   const usersData = SEED_USERS.map((user) => ({
     ...user,
-    email_verified_at: new Date(),
+    email_verified_at: new Date().toISOString(),
     avatar_url: faker.image.avatar(),
     password_hash: null,
     meta: JSON.stringify({
@@ -56,3 +56,6 @@ export async function seedUsers() {
     throw error;
   }
 }
+
+
+

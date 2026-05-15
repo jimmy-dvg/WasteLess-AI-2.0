@@ -15,7 +15,7 @@ import {
 } from "./helpers";
 import { SEED_HOUSEHOLDS } from "./households.seed";
 import { SEED_USERS } from "./users.seed";
-import { getAllProducts as getProductsFromSchema } from "./categories.seed";
+import { getAllProducts as getProductsFromSchema } from "./helpers";
 
 export async function seedInventoryItems() {
   console.log("🌱 Seeding inventory items...");
@@ -34,8 +34,8 @@ export async function seedInventoryItems() {
       const product = randomElement(allProducts);
       const expirationDate = generateExpirationDate();
       const purchaseDate = generatePurchaseDate();
-      const location = randomElement(locations);
-      const unit = randomElement(units);
+      const location = randomElement(locations as unknown as string[]);
+      const unit = randomElement(units as unknown as string[]);
 
       inventoryItems.push({
         id: deterministicId(
@@ -46,7 +46,7 @@ export async function seedInventoryItems() {
         product_id: deterministicId(`product:${product.name}`),
         name: product.name,
         barcode_id: null,
-        quantity: randomFloat(0.5, 10, 1),
+        quantity: randomFloat(0.5, 10, 1).toString(),
         unit: unit,
         location: location,
         is_open: randomBoolean(0.4),
@@ -84,3 +84,7 @@ export async function seedInventoryItems() {
     throw error;
   }
 }
+
+
+
+

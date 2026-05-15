@@ -2,7 +2,7 @@ import dotenv from "dotenv";
 dotenv.config();
 
 import { drizzle } from "drizzle-orm/node-postgres";
-import pkg from "pg"; const { Pool } = pkg;
+import { Pool } from "pg";
 import * as schema from "../schema/tables";
 
 const connectionString = process.env.DATABASE_URL as string;
@@ -17,4 +17,5 @@ export const db = drizzle(pool, { schema });
 export async function closeDB() {
   await pool.end();
 }
+
 

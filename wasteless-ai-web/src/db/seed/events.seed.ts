@@ -85,7 +85,7 @@ export async function seedWasteLogs() {
           ? deterministicId(`inventory:${household.id}:product:${i}`)
           : null,
         product_id: null,
-        quantity: randomFloat(0.5, 3, 1),
+        quantity: randomFloat(0.5, 3, 1).toString(),
         unit: randomElement(["g", "ml", "piece", "cup"]),
         reason: generateWasteReason(),
         notes: randomBoolean(0.5) ? "Sample waste note" : null,
@@ -133,7 +133,7 @@ export async function seedAIGenerations() {
         result: JSON.stringify(generateAIResult(type)),
         model: randomElement(["gpt-4", "gpt-3.5-turbo", "claude-3"]),
         tokens: randomInt(100, 2000),
-        cost: randomFloat(0.001, 0.1, 3),
+        cost: "0.01",
         status: randomElement([
           "completed",
           "pending",
@@ -164,3 +164,7 @@ export async function seedAIGenerations() {
     throw error;
   }
 }
+
+
+
+

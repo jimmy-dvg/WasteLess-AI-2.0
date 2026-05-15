@@ -1,40 +1,41 @@
 {
-    "name":  "wasteless-ai-web",
-    "version":  "0.1.0",
-    "private":  true,
-    "scripts":  {
-                    "dev":  "next dev",
-                    "build":  "next build",
-                    "start":  "next start",
-                    "lint":  "eslint",
-                    "db:generate":  "drizzle-kit generate --config ./drizzle.config.ts",
-                    "db:migrate":  "drizzle-kit migrate --config ./drizzle.config.ts",
-                    "db:seed":  "tsx src/db/seed/index.ts",
-                    "db:seed:reset":  "tsx src/db/seed/reset.ts \u0026\u0026 npm run db:seed",
-                    "db:seed:clean":  "tsx src/db/seed/reset.ts"
-                },
-    "dependencies":  {
-                         "@neondatabase/serverless":  "^1.1.0",
-                         "dotenv":  "^16.3.1",
-                         "drizzle-orm":  "^0.45.2",
-                         "next":  "16.2.6",
-                         "pg":  "^8.11.0",
-                         "react":  "19.2.4",
-                         "react-dom":  "19.2.4",
-                         "@faker-js/faker":  "^7.6.0"
-                     },
-    "devDependencies":  {
-                            "@tailwindcss/postcss":  "^4",
-                            "@types/node":  "^20",
-                            "@types/react":  "^19",
-                            "@types/react-dom":  "^19",
-                            "drizzle-kit":  "^0.31.10",
-                            "eslint":  "^9",
-                            "eslint-config-next":  "16.2.6",
-                            "tailwindcss":  "^4",
-                            "ts-node":  "^10.9.1",
-                            "tsx":  "^4.17.0",
-                            "typescript":  "^5",
-                            "@faker-js/faker":  "^7.6.0"
-                        }
+    "name": "wasteless-ai-web",
+    "version": "0.1.0",
+    "private": true,
+    "scripts": {
+        "dev": "next dev",
+        "build": "next build",
+        "start": "next start",
+        "lint": "eslint",
+        "db:generate": "drizzle-kit generate --config ./drizzle.config.ts",
+        "db:migrate": "drizzle-kit migrate --config ./drizzle.config.ts",
+        "db:seed": "tsx src/db/seed/index.ts",
+        "db:seed:reset": "tsx src/db/seed/reset.ts && npm run db:seed",
+        "db:seed:clean": "tsx src/db/seed/reset.ts"
+    },
+    "dependencies": {
+        "@faker-js/faker": "^7.6.0",
+        "@neondatabase/serverless": "^1.1.0",
+        "dotenv": "^16.3.1",
+        "drizzle-orm": "^0.45.2",
+        "next": "16.2.6",
+        "pg": "^8.11.0",
+        "react": "19.2.4",
+        "react-dom": "19.2.4"
+    },
+    "devDependencies": {
+        "@faker-js/faker": "^7.6.0",
+        "@tailwindcss/postcss": "^4",
+        "@types/node": "^20",
+        "@types/pg": "^8.20.0",
+        "@types/react": "^19",
+        "@types/react-dom": "^19",
+        "drizzle-kit": "^0.31.10",
+        "eslint": "^9",
+        "eslint-config-next": "16.2.6",
+        "tailwindcss": "^4",
+        "ts-node": "^10.9.1",
+        "tsx": "^4.17.0",
+        "typescript": "^5"
+    }
 }

@@ -36,7 +36,7 @@ export async function seedRecipes() {
         ingredients: JSON.stringify(
           Array.from({ length: randomInt(3, 8) }).map(() => ({
             name: randomElement(products).name,
-            quantity: randomFloat(0.5, 5, 1),
+            quantity: randomFloat(0.5, 5, 1).toString(),
             unit: randomElement(units),
           }))
         ),
@@ -100,7 +100,7 @@ export async function seedRecipeIngredients(recipes: any[], products: any[]) {
         recipe_id: recipe.id,
         product_id: deterministicId(`product:${product.name}`),
         ingredient_text: `${randomFloat(0.5, 5, 1)} ${randomElement(units)} ${product.name}`,
-        quantity: randomFloat(0.5, 5, 1),
+        quantity: randomFloat(0.5, 5, 1).toString(),
         unit: randomElement(units),
         order: i,
         created_at: recipe.created_at,
@@ -125,3 +125,7 @@ export async function seedRecipeIngredients(recipes: any[], products: any[]) {
     throw error;
   }
 }
+
+
+
+

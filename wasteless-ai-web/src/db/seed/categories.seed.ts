@@ -59,7 +59,7 @@ export async function seedProducts() {
       description: `${product.name} - ${product.brand} brand`,
       category_id: categoryId,
       default_unit: product.unit,
-      serving_size: parseFloat(product.serving),
+      serving_size: product.serving,
       gtin: null,
       attributes: JSON.stringify({
         brand: product.brand,
@@ -80,3 +80,5 @@ export async function seedProducts() {
     throw error;
   }
 }
+
+
