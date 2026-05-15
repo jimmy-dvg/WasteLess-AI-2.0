@@ -1,0 +1,10 @@
+{
+  "name": "wasteless-ai-2.0",
+  "version": "1.0.0",
+  "description": "WasteLess-AI app: Next.js + React + Expo",
+  "license": "ISC",
+  "author": "Didi Georgiev",
+  "type": "commonjs",
+  "scripts": {
+  }
+}
