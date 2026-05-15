@@ -5,6 +5,16 @@
   "license": "ISC",
   "author": "Didi Georgiev",
   "type": "commonjs",
+  "workspaces": [
+    "wasteless-ai-web",
+    "wasteless-ai-mobile",
+    "wasteless-ai-shared"
+  ],
   "scripts": {
+    "dev": "concurrently \"npm run dev -w wasteless-ai-web\" \"npm run start -w wasteless-ai-mobile\"",
+    "build": "npm run build -w wasteless-ai-web"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
   }
 }
