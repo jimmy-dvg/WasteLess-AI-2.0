@@ -3,8 +3,9 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import Button from "./Button";
+import UserMenu from "./UserMenu";
 
-export default function Navbar() {
+export default function Navbar({ user }: { user?: { id: string; name: string; email: string } | null }) {
   const [isOpen, setIsOpen] = useState(false);
 
   const navLinks = [
@@ -40,17 +41,27 @@ export default function Navbar() {
 
           {/* CTA Buttons */}
           <div className="flex items-center gap-3">
-            <a href="/signin" className="hidden sm:inline">
-              <Button variant="outline" size="sm">
-                Sign In
-              </Button>
-            </a>
+            {!user && (
+              <>
+                <Link href="/login" className="hidden sm:inline">
+                  <Button variant="outline" size="sm">
+                    Login
+                  </Button>
+                </Link>
+                <Link href="/register" className="hidden sm:inline">
+                  <Button variant="primary" size="sm">
+                    Register
+                  </Button>
+                </Link>
+              </>
+            )}
+
+            {user && <UserMenu user={user} />}
+
             <Button
-              variant="primary"
+              variant="secondary"
               size="sm"
-              onClick={() =>
-                window.open("https://app.wastelessai.com", "_blank")
-              }
+              onClick={() => window.open("https://app.wastelessai.com", "_blank")}
             >
               Get Started
             </Button>
@@ -92,11 +103,22 @@ export default function Navbar() {
               </a>
             ))}
             <div className="px-4 pt-2 space-y-2">
-              <a href="/signin" className="block w-full">
-                <Button variant="outline" size="sm" className="w-full">
-                  Sign In
-                </Button>
-              </a>
+              {!user ? (
+                <>
+                  <Link href="/login" className="block w-full">
+                    <Button variant="outline" size="sm" className="w-full">
+                      Login
+                    </Button>
+                  </Link>
+                  <Link href="/register" className="block w-full">
+                    <Button variant="primary" size="sm" className="w-full">
+                      Register
+                    </Button>
+                  </Link>
+                </>
+              ) : (
+                <UserMenu user={user} />
+              )}
             </div>
           </div>
         )}
