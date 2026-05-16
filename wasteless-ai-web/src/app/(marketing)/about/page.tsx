@@ -1,7 +1,5 @@
-
 import SectionWrapper from "@/components/SectionWrapper";
 import Button from "@/components/Button";
-import Link from "next/link";
 
 export const metadata = {
   title: "About WasteLessAI",
@@ -13,18 +11,16 @@ export default function AboutPage() {
     <>
       <SectionWrapper className="pt-20">
         <div className="max-w-3xl mx-auto space-y-12">
-          {/* Hero */}
           <div className="space-y-6">
             <h1 className="text-4xl sm:text-5xl font-bold text-slate-900 dark:text-white">
               About WasteLessAI
             </h1>
             <p className="text-xl text-slate-600 dark:text-slate-300 leading-relaxed">
-              We're on a mission to help households reduce food waste, save
-              money, and make smarter decisions about what they eat.
+              We are on a mission to help households reduce food waste, save money,
+              and make smarter decisions about what they eat.
             </p>
           </div>
 
-          {/* Mission */}
           <div className="space-y-4 p-8 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl border border-emerald-200 dark:border-emerald-800">
             <h2 className="text-2xl font-bold text-emerald-900 dark:text-emerald-100">
               Our Mission
@@ -36,7 +32,6 @@ export default function AboutPage() {
             </p>
           </div>
 
-          {/* Story */}
           <div className="space-y-4">
             <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
               Our Story
@@ -60,7 +55,6 @@ export default function AboutPage() {
             </div>
           </div>
 
-          {/* Values */}
           <div className="space-y-4">
             <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
               Our Values
@@ -81,10 +75,10 @@ export default function AboutPage() {
                 },
                 {
                   title: "Innovation",
-                  description: "We continuously push the boundaries of what's possible.",
+                  description: "We continuously push the boundaries of what is possible.",
                 },
-              ].map((value, i) => (
-                <div key={i} className="p-4 bg-slate-50 dark:bg-slate-900 rounded-lg">
+              ].map((value) => (
+                <div key={value.title} className="p-4 bg-slate-50 dark:bg-slate-900 rounded-lg">
                   <h3 className="font-bold text-slate-900 dark:text-white mb-2">
                     {value.title}
                   </h3>
@@ -96,19 +90,13 @@ export default function AboutPage() {
             </div>
           </div>
 
-          {/* CTA */}
           <div className="text-center space-y-4 py-12">
-            <p className="text-slate-600 dark:text-slate-300">
-              Ready to join our mission?
-            </p>
-            <Button
-              variant="primary"
-              size="lg"
-              >
-                <a href="https://app.wastelessai.com/signup" target="_blank" rel="noopener noreferrer">
-                  Get Started Today
-                </a>
-              </Button>
+            <p className="text-slate-600 dark:text-slate-300">Ready to join our mission?</p>
+            <Button variant="primary" size="lg">
+              <a href="https://app.wastelessai.com/signup" target="_blank" rel="noopener noreferrer">
+                Get Started Today
+              </a>
+            </Button>
           </div>
         </div>
       </SectionWrapper>

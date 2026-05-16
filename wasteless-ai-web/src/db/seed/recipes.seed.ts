@@ -1,4 +1,3 @@
-import { faker } from "@faker-js/faker";
 import { db } from "./db";
 import * as schema from "../schema/tables";
 import {
@@ -13,6 +12,15 @@ import {
 } from "./helpers";
 import { SEED_HOUSEHOLDS } from "./households.seed";
 import { SEED_USERS } from "./users.seed";
+
+type SeedRecipe = {
+  id: string;
+  created_at: Date;
+};
+
+type SeedProduct = {
+  name: string;
+};
 
 export async function seedRecipes() {
   console.log("🌱 Seeding recipes...");
@@ -84,7 +92,7 @@ export async function seedRecipes() {
   await seedRecipeIngredients(recipes, products);
 }
 
-export async function seedRecipeIngredients(recipes: any[], products: any[]) {
+export async function seedRecipeIngredients(recipes: SeedRecipe[], products: SeedProduct[]) {
   console.log("🌱 Seeding recipe ingredients...");
 
   const recipeIngredients = [];

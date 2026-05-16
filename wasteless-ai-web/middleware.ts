@@ -2,12 +2,13 @@ import { NextResponse } from "next/server";
 import { NextRequest } from "next/server";
 import { verifyToken } from "./src/lib/jwt";
 
-const PUBLIC_PATHS = ["/", "/login", "/register", "/_next", "/favicon.ico"];
+const PUBLIC_PATHS = ["/", "/login", "/register", "/about", "/privacy", "/terms"];
+const PUBLIC_PREFIXES = ["/_next", "/favicon.ico"];
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  if (PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p))) {
+  if (PUBLIC_PATHS.includes(pathname) || PUBLIC_PREFIXES.some((p) => pathname.startsWith(p))) {
     return NextResponse.next();
   }
 

@@ -1,4 +1,3 @@
-import { faker } from "@faker-js/faker";
 import { db } from "./db";
 import * as schema from "../schema/tables";
 import {
@@ -15,7 +14,6 @@ import {
 } from "./helpers";
 import { SEED_HOUSEHOLDS } from "./households.seed";
 import { SEED_USERS } from "./users.seed";
-import { getAllProducts as getProductsFromSchema } from "./helpers";
 
 export async function seedInventoryItems() {
   console.log("🌱 Seeding inventory items...");

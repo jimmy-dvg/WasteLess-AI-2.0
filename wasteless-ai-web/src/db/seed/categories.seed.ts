@@ -1,4 +1,3 @@
-import { faker } from "@faker-js/faker";
 import { db } from "./db";
 import * as schema from "../schema/tables";
 import { deterministicId, productDefinitions, getAllProducts } from "./helpers";
@@ -35,7 +34,7 @@ export async function seedCategories() {
 export async function seedProducts() {
   console.log("🌱 Seeding products...");
 
-  const productsData = getAllProducts().map((product, index) => {
+  const productsData = getAllProducts().map((product) => {
     // Determine category based on product definition
     let categoryId: string;
     if (productDefinitions.dairy.some((p) => p.name === product.name)) {

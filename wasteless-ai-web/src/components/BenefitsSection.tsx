@@ -23,7 +23,7 @@ const benefits = [
   {
     title: "📚 Better Organization",
     description:
-      "Know exactly what's in your kitchen. Find items faster, plan meals better, stress less.",
+          "Know exactly what is in your kitchen. Find items faster, plan meals better, stress less.",
     stats: "5 min to find anything",
   },
 ];
@@ -106,9 +106,9 @@ export default function BenefitsSection() {
           ))}
         </div>
         <p className="text-lg italic text-slate-300 max-w-2xl mx-auto">
-          "WasteLessAI has completely changed how our family shops. We save
-          money, waste less food, and actually enjoy our meals more. It's like
-          having a personal nutritionist in your pocket!"
+          WasteLessAI has completely changed how our family shops. We save
+          money, waste less food, and actually enjoy our meals more. It is like
+          having a personal nutritionist in your pocket.
         </p>
         <div>
           <p className="font-semibold">Sarah Johnson</p>

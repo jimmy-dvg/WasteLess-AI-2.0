@@ -23,7 +23,7 @@ export default function PrivacyPage() {
                 1. Introduction
               </h2>
               <p>
-                WasteLessAI ("we", "us", "our") operates the WasteLessAI website
+                WasteLessAI, referred to as we, us, and our, operates the WasteLessAI website
                 and application. This page informs you of our policies regarding
                 the collection, use, and disclosure of personal data when you use
                 our Service and the choices you have associated with that data.
@@ -94,7 +94,7 @@ export default function PrivacyPage() {
               <p>
                 We may update our Privacy Policy from time to time. We will
                 notify you of any changes by posting the new Privacy Policy on
-                this page and updating the "effective date" at the top of this
+                this page and updating the effective date at the top of this
                 Privacy Policy.
               </p>
             </section>

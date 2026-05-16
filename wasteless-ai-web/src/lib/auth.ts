@@ -18,7 +18,7 @@ export async function getCurrentUser() {
     if (!user || user.length === 0) return null;
     const u = user[0];
     return { id: u.id, email: u.email, name: u.name };
-  } catch (err) {
+  } catch {
     return null;
   }
 }

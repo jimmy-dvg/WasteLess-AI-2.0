@@ -1,7 +1,6 @@
-import { faker } from "@faker-js/faker";
 import { db } from "./db";
 import * as schema from "../schema/tables";
-import { deterministicId, generateHouseholdName, roles } from "./helpers";
+import { deterministicId } from "./helpers";
 import { SEED_USERS } from "./users.seed";
 
 export const SEED_HOUSEHOLDS = [

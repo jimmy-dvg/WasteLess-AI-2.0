@@ -1,4 +1,3 @@
-import { faker } from "@faker-js/faker";
 import { db } from "./db";
 import * as schema from "../schema/tables";
 import {
@@ -13,6 +12,15 @@ import {
 } from "./helpers";
 import { SEED_HOUSEHOLDS } from "./households.seed";
 import { SEED_USERS } from "./users.seed";
+
+type SeedShoppingList = {
+  id: string;
+  created_at: Date;
+};
+
+type SeedProduct = {
+  name: string;
+};
 
 export async function seedShoppingLists() {
   console.log("🌱 Seeding shopping lists...");
@@ -58,8 +66,8 @@ export async function seedShoppingLists() {
 }
 
 export async function seedShoppingListItems(
-  shoppingLists: any[],
-  products: any[]
+  shoppingLists: SeedShoppingList[],
+  products: SeedProduct[]
 ) {
   console.log("🌱 Seeding shopping list items...");
 

@@ -76,7 +76,7 @@ export default function CTASection() {
           <div className="flex flex-col sm:flex-row items-center gap-6">
             <div className="flex-1">
               <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
-                Questions? We're here to help
+                Questions? We are here to help
               </h3>
               <p className="text-slate-600 dark:text-slate-400">
                 Our team is available 24/7 to help you get started and answer

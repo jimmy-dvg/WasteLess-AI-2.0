@@ -112,7 +112,7 @@ export default function HeroSection() {
                   AI Recipe Suggestion
                 </p>
                 <p className="text-xs text-slate-600 dark:text-slate-300">
-                  "Tomato Basil Pasta" uses 3 items expiring soon
+                  Tomato Basil Pasta uses 3 items expiring soon
                 </p>
               </div>
 
