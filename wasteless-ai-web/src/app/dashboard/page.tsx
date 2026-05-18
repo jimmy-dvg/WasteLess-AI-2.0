@@ -40,10 +40,10 @@ export default async function DashboardPage() {
       marker: "X",
     },
     {
-      label: "Shopping list items",
-      value: data.stats.shoppingItems,
-      description: "Open items on the active list",
-      marker: "S",
+      label: "Categories",
+      value: data.stats.categoriesCount,
+      description: "Categories used to organize products",
+      marker: "C",
     },
   ];
 
@@ -73,7 +73,7 @@ export default async function DashboardPage() {
           <div className="flex items-center justify-between gap-4 border-b border-slate-200 p-5">
             <div>
               <h2 className="text-lg font-semibold text-slate-950">Recent inventory</h2>
-              <p className="text-sm text-slate-500">Latest household items and expiration status</p>
+              <p className="text-sm text-slate-500">Latest items and expiration status</p>
             </div>
             <Link href="/dashboard/inventory" className="text-sm font-semibold text-emerald-700 hover:text-emerald-800">
               View all
@@ -90,7 +90,7 @@ export default async function DashboardPage() {
                     href="/dashboard/inventory"
                     className="inline-flex rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
                   >
-                    Add inventory item
+                    Add product
                   </Link>
                 }
               />

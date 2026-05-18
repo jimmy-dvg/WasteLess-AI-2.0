@@ -2,7 +2,9 @@
 
 import { useActionState, useEffect, useRef } from "react";
 import { useFormStatus } from "react-dom";
-import { addInventoryItem, type InventoryActionState } from "../actions";
+import type { InventoryCategory } from "@/types/inventory";
+import { createProductAction, type InventoryActionState } from "../actions";
+import { useToast } from "@/components/ui/Toast";
 
 const initialState: InventoryActionState = {
   success: false,
@@ -19,26 +21,34 @@ function SubmitButton() {
       disabled={pending}
       className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-emerald-300"
     >
-      {pending ? "Adding..." : "Add item"}
+      {pending ? "Adding..." : "Add product"}
     </button>
   );
 }
 
-export default function AddInventoryItemForm() {
-  const [state, formAction] = useActionState(addInventoryItem, initialState);
+const locationOptions = ["pantry", "fridge", "freezer", "counter", "cellar", "other"];
+
+export default function AddProductForm({ categories }: { categories: InventoryCategory[] }) {
+  const [state, formAction] = useActionState(createProductAction, initialState);
   const formRef = useRef<HTMLFormElement>(null);
+  const { addToast } = useToast();
 
   useEffect(() => {
     if (state.success) {
       formRef.current?.reset();
+      if (state.message) addToast(state.message, "success");
     }
-  }, [state.success]);
+
+    if (state.error) {
+      addToast(state.error, "error");
+    }
+  }, [state, addToast]);
 
   return (
     <section className="rounded-lg border border-emerald-100 bg-emerald-50/60 p-4">
       <div className="mb-4">
-        <h2 className="text-base font-semibold text-slate-950">Add inventory item</h2>
-        <p className="mt-1 text-sm text-slate-600">Track quantity, location, and expiration date in one pass.</p>
+        <h2 className="text-base font-semibold text-slate-950">Add product</h2>
+        <p className="mt-1 text-sm text-slate-600">Track quantity, storage, and expiration in one pass.</p>
       </div>
       <form ref={formRef} action={formAction} className="grid gap-3 md:grid-cols-6">
         <label className="md:col-span-2">
@@ -69,25 +79,36 @@ export default function AddInventoryItemForm() {
         </label>
         <label>
           <span className="text-xs font-semibold text-slate-600">Category</span>
+          <select
+            name="category_id"
+            className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+          >
+            <option value="">Uncategorized</option>
+            {categories.map((category) => (
+              <option key={category.id} value={category.id}>
+                {category.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          <span className="text-xs font-semibold text-slate-600">Storage</span>
           <input
-            name="category"
-            placeholder="Dairy"
+            name="storage_location"
+            list="storage-options"
+            placeholder="pantry"
+            className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm capitalize outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+          />
+        </label>
+        <label>
+          <span className="text-xs font-semibold text-slate-600">Purchase date</span>
+          <input
+            name="purchase_date"
+            type="date"
             className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
           />
         </label>
         <label>
-          <span className="text-xs font-semibold text-slate-600">Location</span>
-          <select
-            name="location"
-            defaultValue="fridge"
-            className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
-          >
-            <option value="pantry">Pantry</option>
-            <option value="fridge">Fridge</option>
-            <option value="freezer">Freezer</option>
-          </select>
-        </label>
-        <label className="md:col-span-2">
           <span className="text-xs font-semibold text-slate-600">Expiration date</span>
           <input
             name="expiration_date"
@@ -95,12 +116,24 @@ export default function AddInventoryItemForm() {
             className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
           />
         </label>
-        <div className="flex items-end gap-3 md:col-span-4">
+        <label className="md:col-span-4">
+          <span className="text-xs font-semibold text-slate-600">Notes</span>
+          <input
+            name="notes"
+            placeholder="Keep sealed after opening"
+            className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+          />
+        </label>
+        <div className="flex items-end gap-3 md:col-span-2">
           <SubmitButton />
           {state.error ? <p className="text-sm font-medium text-rose-700">{state.error}</p> : null}
-          {state.message ? <p className="text-sm font-medium text-emerald-700">{state.message}</p> : null}
         </div>
       </form>
+      <datalist id="storage-options">
+        {locationOptions.map((option) => (
+          <option key={option} value={option} />
+        ))}
+      </datalist>
     </section>
   );
 }

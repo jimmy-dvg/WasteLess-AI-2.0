@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import AppProviders from "@/components/providers/AppProviders";
 
 export const metadata: Metadata = {
   title: "WasteLessAI - AI-Powered Food Waste Reduction",
@@ -42,7 +43,7 @@ export default function RootLayout({
       data-scroll-behavior="smooth"
     >
       <body className="min-h-full bg-white text-gray-900 dark:bg-slate-950 dark:text-gray-50">
-        {children}
+        <AppProviders>{children}</AppProviders>
       </body>
     </html>
   );

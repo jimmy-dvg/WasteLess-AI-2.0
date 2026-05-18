@@ -1,5 +1,10 @@
 export const dashboardNavItems = [
   {
+    label: "Home",
+    href: "/",
+    marker: "H",
+  },
+  {
     label: "Dashboard",
     href: "/dashboard",
     marker: "D",
@@ -8,6 +13,11 @@ export const dashboardNavItems = [
     label: "Inventory",
     href: "/dashboard/inventory",
     marker: "I",
+  },
+  {
+    label: "Categories",
+    href: "/dashboard/categories",
+    marker: "C",
   },
   {
     label: "Shopping List",

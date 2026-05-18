@@ -1,21 +1,26 @@
+import { addDays as addDaysFn, differenceInCalendarDays, format, isValid, parseISO, startOfDay as startOfDayFn } from "date-fns";
+
 export type ExpirationStatus = "fresh" | "expiring" | "expired";
 
 export function toDate(value: unknown) {
   if (!value) return null;
-  if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value;
+  if (value instanceof Date) return isValid(value) ? value : null;
 
-  const date = new Date(String(value));
-  return Number.isNaN(date.getTime()) ? null : date;
+  if (typeof value === "string") {
+    const parsed = parseISO(value);
+    return isValid(parsed) ? parsed : null;
+  }
+
+  const date = new Date(value as string | number);
+  return isValid(date) ? date : null;
 }
 
 export function startOfDay(date = new Date()) {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  return startOfDayFn(date);
 }
 
 export function addDays(date: Date, days: number) {
-  const nextDate = new Date(date);
-  nextDate.setDate(nextDate.getDate() + days);
-  return nextDate;
+  return addDaysFn(date, days);
 }
 
 export function getExpirationStatus(value: unknown): ExpirationStatus {
@@ -34,11 +39,7 @@ export function formatDate(value: unknown) {
   const date = toDate(value);
   if (!date) return "No date";
 
-  return new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  }).format(date);
+  return format(date, "MMM d, yyyy");
 }
 
 export function formatRelativeExpiration(value: unknown) {
@@ -47,7 +48,7 @@ export function formatRelativeExpiration(value: unknown) {
 
   const today = startOfDay();
   const target = startOfDay(date);
-  const diffDays = Math.round((target.getTime() - today.getTime()) / 86_400_000);
+  const diffDays = differenceInCalendarDays(target, today);
 
   if (diffDays < 0) return `${Math.abs(diffDays)} day${Math.abs(diffDays) === 1 ? "" : "s"} overdue`;
   if (diffDays === 0) return "Expires today";

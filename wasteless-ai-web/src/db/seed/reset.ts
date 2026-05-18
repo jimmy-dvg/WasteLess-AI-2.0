@@ -27,6 +27,7 @@ async function resetDatabase() {
     schema.categories,
     schema.household_members,
     schema.households,
+    schema.profiles,
     schema.users,
   ];
 

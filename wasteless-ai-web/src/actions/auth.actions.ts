@@ -54,16 +54,24 @@ export async function registerUser(
 
     const password_hash = await bcrypt.hash(parsed.data.password, 10);
 
-    const insert = await db
-      .insert(schema.users)
-      .values({
-        email: parsed.data.email,
-        name: parsed.data.full_name,
-        password_hash,
-      })
-      .returning();
+    const user = await db.transaction(async (tx) => {
+      const insert = await tx
+        .insert(schema.users)
+        .values({
+          email: parsed.data.email,
+          name: parsed.data.full_name,
+          password_hash,
+        })
+        .returning();
 
-    const user = insert[0];
+      const created = insert[0];
+      await tx.insert(schema.profiles).values({
+        id: created.id,
+        email: created.email,
+      });
+
+      return created;
+    });
 
     const token = signToken({ sub: user.id });
 

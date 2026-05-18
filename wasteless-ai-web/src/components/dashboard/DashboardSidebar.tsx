@@ -15,7 +15,11 @@ export default function DashboardSidebar({ onNavigate }: DashboardSidebarProps) 
     <nav aria-label="Dashboard navigation" className="flex flex-1 flex-col gap-2">
       {dashboardNavItems.map((item) => {
         const isActive =
-          item.href === "/dashboard" ? pathname === item.href : pathname.startsWith(item.href);
+          item.href === "/"
+            ? pathname === "/"
+            : item.href === "/dashboard"
+              ? pathname === item.href
+              : pathname.startsWith(item.href);
 
         return (
           <Link

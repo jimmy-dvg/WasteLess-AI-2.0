@@ -8,6 +8,8 @@ import {
   jsonb,
   integer,
   numeric,
+  index,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 
 export const users = pgTable("users", {
@@ -22,6 +24,20 @@ export const users = pgTable("users", {
   created_at: timestamp("created_at").defaultNow().notNull(),
   updated_at: timestamp("updated_at").defaultNow().notNull(),
 });
+
+export const profiles = pgTable(
+  "profiles",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .references(() => users.id, { onDelete: "cascade" }),
+    email: varchar("email", { length: 320 }).notNull(),
+    created_at: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    emailIdx: uniqueIndex("profiles_email_unique").on(table.email),
+  })
+);
 
 export const households = pgTable("households", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -44,28 +60,54 @@ export const household_members = pgTable("household_members", {
   updated_at: timestamp("updated_at").defaultNow().notNull(),
 });
 
-export const categories = pgTable("categories", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  household_id: uuid("household_id"),
-  name: text("name").notNull(),
-  parent_id: uuid("parent_id"),
-  created_at: timestamp("created_at").defaultNow().notNull(),
-  updated_at: timestamp("updated_at").defaultNow().notNull(),
-});
+export const categories = pgTable(
+  "categories",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    user_id: uuid("user_id").references(() => users.id, { onDelete: "cascade" }),
+    household_id: uuid("household_id"),
+    name: text("name").notNull(),
+    color: varchar("color", { length: 24 }),
+    parent_id: uuid("parent_id"),
+    created_at: timestamp("created_at").defaultNow().notNull(),
+    updated_at: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    userIdx: index("categories_user_id_idx").on(table.user_id),
+    nameIdx: index("categories_name_idx").on(table.name),
+    userNameUnique: uniqueIndex("categories_user_name_unique").on(table.user_id, table.name),
+  })
+);
 
-export const products = pgTable("products", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  name: text("name").notNull(),
-  brand: text("brand"),
-  description: text("description"),
-  category_id: uuid("category_id"),
-  default_unit: varchar("default_unit", { length: 32 }),
-  serving_size: numeric("serving_size"),
-  gtin: varchar("gtin", { length: 64 }),
-  attributes: jsonb("attributes").default({}),
-  created_at: timestamp("created_at").defaultNow().notNull(),
-  updated_at: timestamp("updated_at").defaultNow().notNull(),
-});
+export const products = pgTable(
+  "products",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    user_id: uuid("user_id").references(() => users.id, { onDelete: "cascade" }),
+    category_id: uuid("category_id").references(() => categories.id, { onDelete: "set null" }),
+    name: text("name").notNull(),
+    quantity: numeric("quantity", { precision: 10, scale: 2 }).default("1"),
+    unit: varchar("unit", { length: 32 }),
+    purchase_date: timestamp("purchase_date"),
+    expiration_date: timestamp("expiration_date"),
+    storage_location: varchar("storage_location", { length: 32 }),
+    notes: text("notes"),
+    brand: text("brand"),
+    description: text("description"),
+    default_unit: varchar("default_unit", { length: 32 }),
+    serving_size: numeric("serving_size"),
+    gtin: varchar("gtin", { length: 64 }),
+    attributes: jsonb("attributes").default({}),
+    created_at: timestamp("created_at").defaultNow().notNull(),
+    updated_at: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    userIdx: index("products_user_id_idx").on(table.user_id),
+    categoryIdx: index("products_category_id_idx").on(table.category_id),
+    expirationIdx: index("products_expiration_idx").on(table.expiration_date),
+    nameIdx: index("products_name_idx").on(table.name),
+  })
+);
 
 export const product_barcodes = pgTable("product_barcodes", {
   id: uuid("id").defaultRandom().primaryKey(),
