@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import Button from "./Button";
 import SectionWrapper from "./SectionWrapper";
 
@@ -56,6 +57,11 @@ export default function HeroSection() {
             >
               Learn More
             </Button>
+            <Link href="/dashboard">
+              <Button variant="secondary" size="lg">
+                Go to Dashboard
+              </Button>
+            </Link>
           </div>
 
           {/* Trust Indicators */}
