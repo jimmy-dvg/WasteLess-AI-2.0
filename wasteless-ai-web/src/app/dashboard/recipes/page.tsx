@@ -1,9 +1,8 @@
-import EmptyState from "@/components/dashboard/EmptyState";
 import ErrorState from "@/components/dashboard/ErrorState";
-import PageHeader from "@/components/dashboard/PageHeader";
 import { getFallbackRecipes, getRecipesPageData } from "@/db/queries/recipes";
-import RecipeCard from "@/features/recipes/components/RecipeCard";
+import RecipeRecommendations from "@/features/recipes/components/RecipeRecommendations";
 import { requireUser } from "@/lib/auth";
+import { getRecipePreferencesForUser } from "@/services/recipes.service";
 
 export const dynamic = "force-dynamic";
 
@@ -18,26 +17,7 @@ export default async function RecipesPage() {
   }
 
   const recipes = data.recipes.length > 0 ? data.recipes : getFallbackRecipes();
+  const preferences = await getRecipePreferencesForUser(user.id);
 
-  return (
-    <div className="space-y-6">
-      <PageHeader
-        title="AI recipes"
-        description="Recipe recommendations built around expiring ingredients and pantry staples."
-      />
-
-      {recipes.length === 0 ? (
-        <EmptyState
-          title="No recipe recommendations yet"
-          description="Add inventory items so WasteLessAI can recommend recipes that use what is already in your kitchen."
-        />
-      ) : (
-        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {recipes.map((recipe) => (
-            <RecipeCard key={recipe.id} recipe={recipe} />
-          ))}
-        </section>
-      )}
-    </div>
-  );
+  return <RecipeRecommendations initialRecipes={recipes} preferences={preferences} />;
 }

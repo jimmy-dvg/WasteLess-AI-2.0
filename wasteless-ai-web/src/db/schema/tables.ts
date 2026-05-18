@@ -172,15 +172,41 @@ export const recipes = pgTable("recipes", {
   created_by: uuid("created_by"),
   title: text("title").notNull(),
   description: text("description"),
+  difficulty: varchar("difficulty", { length: 20 }),
   servings: integer("servings"),
   cook_time: integer("cook_time"),
-  ingredients: jsonb("ingredients").default({}),
+  ingredients: jsonb("ingredients").default([]),
+  missing_ingredients: jsonb("missing_ingredients").default([]),
+  nutrition: jsonb("nutrition").default({}),
   instructions: text("instructions"),
+  waste_notes: text("waste_notes"),
   tags: jsonb("tags").default([]),
+  score: numeric("score", { precision: 6, scale: 2 }),
   metadata: jsonb("metadata").default({}),
   created_at: timestamp("created_at").defaultNow().notNull(),
   updated_at: timestamp("updated_at").defaultNow().notNull(),
 });
+
+export const saved_recipes = pgTable(
+  "saved_recipes",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    recipe_id: uuid("recipe_id")
+      .notNull()
+      .references(() => recipes.id, { onDelete: "cascade" }),
+    user_id: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    created_at: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    userRecipeUnique: uniqueIndex("saved_recipes_user_recipe_unique").on(
+      table.user_id,
+      table.recipe_id
+    ),
+    userIdx: index("saved_recipes_user_id_idx").on(table.user_id),
+  })
+);
 
 export const recipe_ingredients = pgTable("recipe_ingredients", {
   id: uuid("id").defaultRandom().primaryKey(),
