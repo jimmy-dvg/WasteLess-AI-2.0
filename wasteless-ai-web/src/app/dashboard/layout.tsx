@@ -1,3 +1,4 @@
+import Link from "next/link";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import { requireUser } from "@/lib/auth";
@@ -9,7 +10,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <aside className="fixed inset-y-0 left-0 hidden w-72 border-r border-slate-200 bg-white p-5 lg:flex lg:flex-col">
         <div className="mb-8">
-          <p className="text-lg font-bold text-slate-950">WasteLessAI</p>
+          <Link href="/" className="text-lg font-bold text-slate-950">
+            WasteLessAI
+          </Link>
           <p className="mt-1 text-sm text-slate-500">Smart household waste control</p>
         </div>
         <DashboardSidebar />

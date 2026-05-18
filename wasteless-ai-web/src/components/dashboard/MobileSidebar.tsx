@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import DashboardSidebar from "./DashboardSidebar";
 
 type MobileSidebarProps = {
@@ -21,7 +22,9 @@ export default function MobileSidebar({ open, onClose }: MobileSidebarProps) {
       <aside className="relative flex h-full w-80 max-w-[86vw] flex-col border-r border-slate-200 bg-white p-4 shadow-xl">
         <div className="mb-6 flex items-center justify-between">
           <div>
-            <p className="text-sm font-semibold text-emerald-700">WasteLessAI</p>
+            <Link href="/" className="text-sm font-semibold text-emerald-700">
+              WasteLessAI
+            </Link>
             <p className="text-xs text-slate-500">Household dashboard</p>
           </div>
           <button
