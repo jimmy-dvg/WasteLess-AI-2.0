@@ -61,6 +61,8 @@ export async function POST(request: Request) {
           maxRecipes: payload.maxRecipes,
           includeExpired: payload.includeExpired,
           preferencesOverride: payload.preferencesOverride,
+          streamTokens: true,
+          onToken: (token) => send("token", { token }),
         });
         send("status", { message: "Finalizing recommendations" });
         send("result", result);

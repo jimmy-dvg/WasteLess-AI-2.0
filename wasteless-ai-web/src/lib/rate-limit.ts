@@ -8,7 +8,6 @@ type RateLimitEntry = {
 type RateLimitStore = Map<string, RateLimitEntry>;
 
 declare global {
-  // eslint-disable-next-line no-var
   var __wastelessRateLimit: RateLimitStore | undefined;
 }
 

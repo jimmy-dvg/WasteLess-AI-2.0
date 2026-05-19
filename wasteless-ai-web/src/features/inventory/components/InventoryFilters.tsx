@@ -32,10 +32,6 @@ export default function InventoryFilters({ categories, locations, filters }: Inv
   };
 
   useEffect(() => {
-    setQuery(filters.query);
-  }, [filters.query]);
-
-  useEffect(() => {
     if (debouncedQuery !== filters.query) {
       updateParams({ query: debouncedQuery });
     }

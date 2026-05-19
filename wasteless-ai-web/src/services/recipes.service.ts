@@ -4,9 +4,10 @@ import { db } from "@/db";
 import * as schema from "@/db/schema/tables";
 import { ensurePersonalHouseholdForUser } from "@/db/queries/households";
 import { getInventoryPageData } from "@/services/inventory.service";
-import { buildRecipePromptPayload, buildRecipeSystemPrompt, buildRecipeUserPrompt } from "@/services/ai/recipe-prompt";
-import { generateRecipeAiResponse } from "@/services/ai/recipe-client";
-import { computeMissingIngredients, scoreRecipe } from "@/services/ai/recipe-matching";
+import { buildRecipePromptPayload, buildRecipeSystemPrompt, buildRecipeUserPrompt } from "@/ai/prompts/recipes";
+import { generateRecipeAiResponse, streamRecipeAiResponse } from "@/ai/services/recipe-engine";
+import { computeMissingIngredients, scoreRecipe } from "@/ai/services/recipe-matching";
+import { getAiSettingsForUser } from "@/ai/services/ai-settings";
 import { parseJsonValue } from "@/lib/dashboard-utils";
 import { hashJson } from "@/lib/hash";
 import { getCachedValue, setCachedValue } from "@/lib/cache";
@@ -119,8 +120,11 @@ async function logAiGeneration(params: {
   result: unknown;
   model?: string | null;
   tokens?: number | null;
+  provider?: string | null;
+  cost?: number | null;
   status: "success" | "error";
 }) {
+  const modelLabel = params.provider && params.model ? `${params.provider}:${params.model}` : params.model ?? null;
   const rows = await db
     .insert(schema.ai_generations)
     .values({
@@ -129,8 +133,9 @@ async function logAiGeneration(params: {
       generation_type: "recipe_recommendations",
       prompt: params.prompt ?? {},
       result: params.result ?? {},
-      model: params.model ?? null,
+      model: modelLabel,
       tokens: params.tokens ?? null,
+      cost: params.cost != null ? String(params.cost) : null,
       status: params.status,
     })
     .returning({ id: schema.ai_generations.id });
@@ -227,12 +232,15 @@ export async function generateRecipesForUser(options: {
   maxRecipes: number;
   includeExpired: boolean;
   preferencesOverride?: Partial<RecipePreferences> | undefined;
+  streamTokens?: boolean;
+  onToken?: (token: string) => void;
 }) {
   assertRateLimit(`recipe:${options.userId}`, 4, 60_000);
 
   const { user, preferences: storedPreferences } = await getUserPreferences(options.userId);
   const preferences = mergePreferences(storedPreferences, options.preferencesOverride);
   const household = user ? await ensurePersonalHouseholdForUser(user) : null;
+  const aiSettings = await getAiSettingsForUser(options.userId);
 
   const inventory = await getInventorySnapshot(options.userId);
   const filteredInventory = options.includeExpired
@@ -252,7 +260,7 @@ export async function generateRecipesForUser(options: {
     includeExpired: options.includeExpired,
   });
 
-  const cacheKey = hashJson({ userId: options.userId, payload: promptPayload });
+  const cacheKey = hashJson({ userId: options.userId, payload: promptPayload, ai: aiSettings });
   const cached = getCachedValue<{
     recipes: RecipeListItem[];
     summary?: string;
@@ -274,13 +282,32 @@ export async function generateRecipesForUser(options: {
   let aiResponse: Awaited<ReturnType<typeof generateRecipeAiResponse>>;
 
   try {
-    aiResponse = await generateRecipeAiResponse(systemPrompt, userPrompt);
+    if (options.streamTokens && options.onToken) {
+      aiResponse = await streamRecipeAiResponse(
+        systemPrompt,
+        userPrompt,
+        {
+          providerId: aiSettings.provider,
+          model: aiSettings.model,
+          userId: options.userId,
+        },
+        options.onToken
+      );
+    } else {
+      aiResponse = await generateRecipeAiResponse(systemPrompt, userPrompt, {
+        providerId: aiSettings.provider,
+        model: aiSettings.model,
+        userId: options.userId,
+      });
+    }
   } catch (error) {
     await logAiGeneration({
       userId: options.userId,
       householdId: household?.id ?? null,
       prompt: promptPayload,
       result: { error: String(error) },
+      provider: aiSettings.provider,
+      model: aiSettings.model,
       status: "error",
     });
     throw error;
@@ -309,8 +336,10 @@ export async function generateRecipesForUser(options: {
     householdId: household?.id ?? null,
     prompt: promptPayload,
     result: aiResponse.data,
+    provider: aiResponse.provider,
     model: aiResponse.model ?? null,
     tokens: aiResponse.usage.totalTokens ?? null,
+    cost: aiResponse.cost ?? null,
     status: "success",
   });
 

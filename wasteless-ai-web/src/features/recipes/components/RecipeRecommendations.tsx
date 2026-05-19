@@ -8,10 +8,12 @@ import RecipeCard from "@/features/recipes/components/RecipeCard";
 import RecipeCardSkeleton from "@/features/recipes/components/RecipeCardSkeleton";
 import RecipePreferencesForm from "@/features/recipes/components/RecipePreferencesForm";
 import type { RecipeListItem, RecipePreferences } from "@/types/recipes";
+import type { AiSettings } from "@/ai/types";
 
 type RecipeRecommendationsProps = {
   initialRecipes: RecipeListItem[];
   preferences: RecipePreferences;
+  aiSettings: AiSettings;
 };
 
 type RecipeGenerationResponse = {
@@ -45,13 +47,14 @@ function parseSseEvent(chunk: string) {
   }
 }
 
-export default function RecipeRecommendations({ initialRecipes, preferences }: RecipeRecommendationsProps) {
+export default function RecipeRecommendations({ initialRecipes, preferences, aiSettings }: RecipeRecommendationsProps) {
   const [recipes, setRecipes] = useState<RecipeListItem[]>(initialRecipes);
   const [isGenerating, setIsGenerating] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [includeExpired, setIncludeExpired] = useState(false);
   const [summary, setSummary] = useState<string | null>(null);
   const [pantryStaples, setPantryStaples] = useState<string[]>([]);
+  const [streamPreview, setStreamPreview] = useState<string>("");
   const { addToast } = useToast();
 
   const handleGenerate = async () => {
@@ -59,9 +62,10 @@ export default function RecipeRecommendations({ initialRecipes, preferences }: R
     setStatusMessage("Starting recommendations...");
     setSummary(null);
     setPantryStaples([]);
+    setStreamPreview("");
 
     try {
-      const response = await fetch(`/api/recipes/generate?stream=1`, {
+      const response = await fetch(`/api/recipes/generate?stream=${aiSettings.enableStreaming ? "1" : "0"}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ maxRecipes: 3, includeExpired }),
@@ -85,6 +89,10 @@ export default function RecipeRecommendations({ initialRecipes, preferences }: R
             if (!parsed) return;
             if (parsed.event === "status") {
               setStatusMessage(String(parsed.data.message ?? "Working..."));
+            }
+            if (parsed.event === "token") {
+              const token = String(parsed.data.token ?? "");
+              setStreamPreview((prev) => `${prev}${token}`.slice(-2000));
             }
             if (parsed.event === "error") {
               setStatusMessage(null);
@@ -141,6 +149,9 @@ export default function RecipeRecommendations({ initialRecipes, preferences }: R
         description="Recipe recommendations built around expiring ingredients and pantry staples."
         action={
           <div className="flex flex-wrap items-center gap-3">
+            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+              {aiSettings.provider} / {aiSettings.model}
+            </span>
             <label className="flex items-center gap-2 text-xs font-semibold text-slate-600">
               <input
                 type="checkbox"
@@ -165,6 +176,13 @@ export default function RecipeRecommendations({ initialRecipes, preferences }: R
       {statusMessage ? (
         <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
           {statusMessage}
+        </div>
+      ) : null}
+
+      {isGenerating && streamPreview ? (
+        <div className="rounded-lg border border-slate-200 bg-white px-4 py-3 text-xs text-slate-600">
+          <p className="text-xs font-semibold uppercase tracking-normal text-slate-500">Live output</p>
+          <p className="mt-2 whitespace-pre-wrap text-xs text-slate-600">{streamPreview}</p>
         </div>
       ) : null}
 

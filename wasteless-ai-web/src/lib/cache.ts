@@ -8,7 +8,6 @@ type CacheEntry<T> = {
 type CacheStore = Map<string, CacheEntry<unknown>>;
 
 declare global {
-  // eslint-disable-next-line no-var
   var __wastelessCache: CacheStore | undefined;
 }
 

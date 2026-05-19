@@ -3,6 +3,7 @@ import { getFallbackRecipes, getRecipesPageData } from "@/db/queries/recipes";
 import RecipeRecommendations from "@/features/recipes/components/RecipeRecommendations";
 import { requireUser } from "@/lib/auth";
 import { getRecipePreferencesForUser } from "@/services/recipes.service";
+import { getAiSettingsForUser } from "@/ai/services/ai-settings";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +19,7 @@ export default async function RecipesPage() {
 
   const recipes = data.recipes.length > 0 ? data.recipes : getFallbackRecipes();
   const preferences = await getRecipePreferencesForUser(user.id);
+  const aiSettings = await getAiSettingsForUser(user.id);
 
-  return <RecipeRecommendations initialRecipes={recipes} preferences={preferences} />;
+  return <RecipeRecommendations initialRecipes={recipes} preferences={preferences} aiSettings={aiSettings} />;
 }

@@ -5,6 +5,7 @@ import * as schema from "@/db/schema/tables";
 import { parseJsonValue } from "@/lib/dashboard-utils";
 import { and, desc, eq } from "drizzle-orm";
 import { getPrimaryHouseholdForUser } from "./households";
+import type { RecipeListItem } from "@/types/recipes";
 
 type RecipeIngredient = {
   name: string;
@@ -193,7 +194,7 @@ export async function getRecipeDetail(userId: string, recipeId: string) {
   };
 }
 
-export function getFallbackRecipes() {
+export function getFallbackRecipes(): RecipeListItem[] {
   return [
     {
       id: "fallback-greens-bowl",

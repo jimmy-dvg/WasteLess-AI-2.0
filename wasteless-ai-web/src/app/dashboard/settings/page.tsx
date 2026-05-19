@@ -2,15 +2,19 @@ import ErrorState from "@/components/dashboard/ErrorState";
 import PageHeader from "@/components/dashboard/PageHeader";
 import { getPrimaryHouseholdForUser } from "@/db/queries/households";
 import { requireUser } from "@/lib/auth";
+import { getAiSettingsForUser } from "@/ai/services/ai-settings";
+import AiProviderSettings from "@/features/ai/components/AiProviderSettings";
 
 export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
   const user = await requireUser();
   let household;
+  let aiSettings;
 
   try {
     household = await getPrimaryHouseholdForUser(user.id);
+    aiSettings = await getAiSettingsForUser(user.id);
   } catch {
     return <ErrorState title="Settings data is unavailable" />;
   }
@@ -104,6 +108,10 @@ export default async function SettingsPage() {
             </label>
           </div>
         </article>
+      </section>
+
+      <section className="grid gap-4 md:grid-cols-2">
+        <AiProviderSettings initialSettings={aiSettings} />
       </section>
     </div>
   );

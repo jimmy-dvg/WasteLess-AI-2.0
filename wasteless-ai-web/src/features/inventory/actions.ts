@@ -104,13 +104,14 @@ export async function updateProductAction(
     };
   }
 
-  const quantity = parsed.data.quantity ? parseQuantity(parsed.data.quantity) : undefined;
-  if (parsed.data.quantity && !quantity) {
+  const parsedQuantity = parsed.data.quantity ? parseQuantity(parsed.data.quantity) : undefined;
+  if (parsed.data.quantity && !parsedQuantity) {
     return {
       success: false,
       error: "Quantity must be a positive number",
     };
   }
+  const quantity = parsedQuantity ?? undefined;
 
   const purchaseDate = parsed.data.purchase_date ? parseDateInput(parsed.data.purchase_date) : undefined;
   const expirationDate = parsed.data.expiration_date ? parseDateInput(parsed.data.expiration_date) : undefined;
