@@ -241,6 +241,84 @@ export const recipe_ingredients = pgTable("recipe_ingredients", {
   updated_at: timestamp("updated_at").defaultNow().notNull(),
 });
 
+export const meal_plans = pgTable(
+  "meal_plans",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    household_id: uuid("household_id").notNull(),
+    created_by: uuid("created_by"),
+    name: text("name").notNull(),
+    status: varchar("status", { length: 32 }).default("active").notNull(),
+    source: varchar("source", { length: 64 }).default("smart_planner").notNull(),
+    start_date: timestamp("start_date").notNull(),
+    end_date: timestamp("end_date").notNull(),
+    snapshot: jsonb("snapshot").default({}).notNull(),
+    stats: jsonb("stats").default({}).notNull(),
+    created_at: timestamp("created_at").defaultNow().notNull(),
+    updated_at: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    householdStatusIdx: index("meal_plans_household_status_idx").on(table.household_id, table.status),
+    createdByIdx: index("meal_plans_created_by_idx").on(table.created_by),
+  })
+);
+
+export const meal_plan_items = pgTable(
+  "meal_plan_items",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    meal_plan_id: uuid("meal_plan_id")
+      .notNull()
+      .references(() => meal_plans.id, { onDelete: "cascade" }),
+    recipe_id: uuid("recipe_id").references(() => recipes.id, { onDelete: "set null" }),
+    meal_date: timestamp("meal_date").notNull(),
+    slot: varchar("slot", { length: 32 }).default("dinner").notNull(),
+    title: text("title").notNull(),
+    description: text("description"),
+    status: varchar("status", { length: 32 }).default("planned").notNull(),
+    cook_time: integer("cook_time"),
+    servings: integer("servings"),
+    score: numeric("score", { precision: 6, scale: 2 }),
+    priority_items: jsonb("priority_items").default([]).notNull(),
+    missing_items: jsonb("missing_items").default([]).notNull(),
+    consumption_suggestions: jsonb("consumption_suggestions").default([]).notNull(),
+    metadata: jsonb("metadata").default({}).notNull(),
+    cooked_at: timestamp("cooked_at"),
+    skipped_at: timestamp("skipped_at"),
+    created_at: timestamp("created_at").defaultNow().notNull(),
+    updated_at: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    planDateIdx: index("meal_plan_items_plan_date_idx").on(table.meal_plan_id, table.meal_date),
+    statusIdx: index("meal_plan_items_status_idx").on(table.status),
+    recipeIdx: index("meal_plan_items_recipe_id_idx").on(table.recipe_id),
+  })
+);
+
+export const meal_plan_inventory_usages = pgTable(
+  "meal_plan_inventory_usages",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    meal_plan_item_id: uuid("meal_plan_item_id")
+      .notNull()
+      .references(() => meal_plan_items.id, { onDelete: "cascade" }),
+    product_id: uuid("product_id")
+      .notNull()
+      .references(() => products.id, { onDelete: "cascade" }),
+    product_name: text("product_name").notNull(),
+    quantity: numeric("quantity", { precision: 10, scale: 2 }).notNull(),
+    unit: varchar("unit", { length: 32 }),
+    previous_quantity: numeric("previous_quantity", { precision: 10, scale: 2 }).notNull(),
+    next_quantity: numeric("next_quantity", { precision: 10, scale: 2 }).notNull(),
+    metadata: jsonb("metadata").default({}).notNull(),
+    created_at: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    itemIdx: index("meal_plan_inventory_usages_item_idx").on(table.meal_plan_item_id),
+    productIdx: index("meal_plan_inventory_usages_product_idx").on(table.product_id),
+  })
+);
+
 export const notifications = pgTable("notifications", {
   id: uuid("id").defaultRandom().primaryKey(),
   user_id: uuid("user_id"),

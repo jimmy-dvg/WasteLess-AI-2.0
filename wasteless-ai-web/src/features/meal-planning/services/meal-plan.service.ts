@@ -1,6 +1,6 @@
 import "server-only";
 
-import { computeMissingIngredients } from "@/ai/services/recipe-matching";
+import { computeMissingIngredients, matchIngredientsToInventory } from "@/ai/services/recipe-matching";
 import { db } from "@/db";
 import { getPrimaryHouseholdForUser, type UserHousehold } from "@/db/queries/households";
 import * as schema from "@/db/schema/tables";
@@ -57,9 +57,22 @@ type RecipeCandidate = {
   servings: number;
   score: number;
   coverage: number;
+  ingredients: RecipeIngredient[];
   missingItems: RecipeIngredient[];
   priorityItems: string[];
   tags: string[];
+};
+
+export type MealPlanConsumptionSuggestion = {
+  productId: string;
+  name: string;
+  ingredientName: string;
+  quantity: string;
+  unit: string | null;
+  currentQuantity: string;
+  nextQuantity: string;
+  confidence: "high" | "estimated";
+  reason: string;
 };
 
 export type MealPlanInventoryItem = {
@@ -94,6 +107,7 @@ export type MealPlanDay = {
   inventoryCoverage: number;
   priorityItems: string[];
   missingItems: RecipeIngredient[];
+  consumptionSuggestions: MealPlanConsumptionSuggestion[];
   tags: string[];
 };
 
@@ -111,6 +125,7 @@ export type ShoppingOptimizerItem = {
 
 export type MealPlanningData = {
   household: UserHousehold | null;
+  savedPlan: SavedMealPlan | null;
   planDays: MealPlanDay[];
   shoppingSuggestions: ShoppingOptimizerItem[];
   expiringItems: MealPlanInventoryItem[];
@@ -134,6 +149,41 @@ export type MealPlanningData = {
     expiringUsed: number;
     addableShoppingItems: number;
     alreadyListedItems: number;
+  };
+};
+
+export type SavedMealPlanItem = {
+  id: string;
+  date: Date;
+  dateLabel: string;
+  title: string;
+  description: string | null;
+  status: "planned" | "cooked" | "skipped";
+  recipeId: string | null;
+  cookTime: number | null;
+  servings: number | null;
+  score: number | null;
+  priorityItems: string[];
+  missingItems: RecipeIngredient[];
+  consumptionSuggestions: MealPlanConsumptionSuggestion[];
+  cookedAt: Date | null;
+  skippedAt: Date | null;
+};
+
+export type SavedMealPlan = {
+  id: string;
+  name: string;
+  status: string;
+  startDate: Date;
+  endDate: Date;
+  createdAt: Date;
+  updatedAt: Date;
+  items: SavedMealPlanItem[];
+  stats: {
+    totalMeals: number;
+    cookedMeals: number;
+    skippedMeals: number;
+    plannedMeals: number;
   };
 };
 
@@ -169,6 +219,90 @@ function toNumber(value: unknown) {
 function toNullableNumber(value: unknown) {
   const number = Number(value);
   return Number.isFinite(number) ? number : null;
+}
+
+function formatDecimal(value: number) {
+  return Number.isInteger(value) ? String(value) : value.toFixed(2).replace(/\.?0+$/, "");
+}
+
+function parseIngredientQuantity(value?: string) {
+  if (!value) return null;
+  const normalized = value.trim().toLowerCase().replace(",", ".");
+  const mixedFraction = normalized.match(/^(\d+)\s+(\d+)\/(\d+)$/);
+  if (mixedFraction) {
+    const whole = Number(mixedFraction[1]);
+    const numerator = Number(mixedFraction[2]);
+    const denominator = Number(mixedFraction[3]);
+    if (denominator > 0) return whole + numerator / denominator;
+  }
+
+  const fraction = normalized.match(/^(\d+)\/(\d+)$/);
+  if (fraction) {
+    const numerator = Number(fraction[1]);
+    const denominator = Number(fraction[2]);
+    if (denominator > 0) return numerator / denominator;
+  }
+
+  const decimal = normalized.match(/\d+(\.\d+)?/);
+  if (!decimal) return null;
+
+  const parsed = Number(decimal[0]);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
+function normalizeUnit(unit?: string | null) {
+  if (!unit) return null;
+  const normalized = unit.toLowerCase().trim();
+  const aliases: Record<string, string> = {
+    gram: "g",
+    grams: "g",
+    g: "g",
+    kilogram: "kg",
+    kilograms: "kg",
+    kg: "kg",
+    milliliter: "ml",
+    milliliters: "ml",
+    ml: "ml",
+    liter: "l",
+    liters: "l",
+    l: "l",
+    teaspoon: "tsp",
+    teaspoons: "tsp",
+    tsp: "tsp",
+    tablespoon: "tbsp",
+    tablespoons: "tbsp",
+    tbsp: "tbsp",
+    ounce: "oz",
+    ounces: "oz",
+    oz: "oz",
+    pound: "lb",
+    pounds: "lb",
+    lb: "lb",
+    cup: "cup",
+    cups: "cup",
+    can: "can",
+    cans: "can",
+    pack: "pack",
+    packs: "pack",
+    package: "pack",
+    packages: "pack",
+    piece: "item",
+    pieces: "item",
+    item: "item",
+    items: "item",
+    pc: "item",
+    pcs: "item",
+    ct: "item",
+  };
+
+  return aliases[normalized] ?? normalized;
+}
+
+function unitsAreCompatible(inventoryUnit?: string | null, ingredientUnit?: string) {
+  const normalizedInventoryUnit = normalizeUnit(inventoryUnit);
+  const normalizedIngredientUnit = normalizeUnit(ingredientUnit);
+  if (!normalizedInventoryUnit || !normalizedIngredientUnit) return true;
+  return normalizedInventoryUnit === normalizedIngredientUnit;
 }
 
 function daysUntil(value: unknown) {
@@ -243,6 +377,65 @@ function getInventorySnapshot(items: MealPlanInventoryItem[]): RecipeInventoryIt
     expirationDate: item.expirationDate,
     status: item.expirationStatus,
   }));
+}
+
+function buildConsumptionSuggestions(
+  ingredients: RecipeIngredient[],
+  inventory: MealPlanInventoryItem[]
+): MealPlanConsumptionSuggestion[] {
+  const inventorySnapshot = getInventorySnapshot(inventory);
+  const { annotated, matched } = matchIngredientsToInventory(ingredients, inventorySnapshot);
+  const inventoryById = new Map(inventory.map((item) => [item.id, item]));
+  const suggestions = new Map<string, MealPlanConsumptionSuggestion>();
+
+  annotated.forEach((ingredient) => {
+    const match = matched.get(ingredient.name);
+    if (!match) return;
+
+    const inventoryItem = inventoryById.get(match.id);
+    if (!inventoryItem || inventoryItem.expirationStatus === "expired" || inventoryItem.quantityValue <= 0) {
+      return;
+    }
+
+    const parsedQuantity = parseIngredientQuantity(ingredient.quantity);
+    const compatibleUnits = unitsAreCompatible(inventoryItem.unit, ingredient.unit);
+    if (parsedQuantity && !compatibleUnits) return;
+
+    const estimatedQuantity = Math.min(1, inventoryItem.quantityValue);
+    const requestedQuantity = parsedQuantity ?? estimatedQuantity;
+    const existing = suggestions.get(inventoryItem.id);
+    const existingQuantity = existing ? Number(existing.quantity) : 0;
+    const quantity = Math.min(inventoryItem.quantityValue, existingQuantity + requestedQuantity);
+    if (!Number.isFinite(quantity) || quantity <= 0) return;
+
+    const confidence: MealPlanConsumptionSuggestion["confidence"] =
+      parsedQuantity && compatibleUnits ? "high" : "estimated";
+    const nextQuantity = Math.max(0, inventoryItem.quantityValue - quantity);
+    const reason =
+      inventoryItem.expirationStatus === "expiring"
+        ? `${inventoryItem.name} is in the expiration queue`
+        : `Matched to ${ingredient.name}`;
+
+    suggestions.set(inventoryItem.id, {
+      productId: inventoryItem.id,
+      name: inventoryItem.name,
+      ingredientName: ingredient.name,
+      quantity: formatDecimal(quantity),
+      unit: inventoryItem.unit,
+      currentQuantity: formatDecimal(inventoryItem.quantityValue),
+      nextQuantity: formatDecimal(nextQuantity),
+      confidence,
+      reason,
+    });
+  });
+
+  return Array.from(suggestions.values())
+    .sort((a, b) => {
+      const aInventory = inventoryById.get(a.productId);
+      const bInventory = inventoryById.get(b.productId);
+      return (bInventory?.priorityScore ?? 0) - (aInventory?.priorityScore ?? 0);
+    })
+    .slice(0, 8);
 }
 
 async function getMealPlanningInventory(userId: string): Promise<MealPlanInventoryItem[]> {
@@ -479,6 +672,7 @@ function buildRecipeCandidates(
         servings: recipe.servings,
         score: Math.max(0, Math.min(100, score)),
         coverage,
+        ingredients: recipe.ingredients,
         missingItems,
         priorityItems: expiringIngredients.slice(0, 4),
         tags: recipe.tags,
@@ -527,6 +721,7 @@ function buildFallbackCandidate(
     servings: 2,
     score: Math.max(55, primary.priorityScore),
     coverage: (ingredients.length - computed.missing.length) / ingredients.length,
+    ingredients,
     missingItems: computed.missing,
     priorityItems: [primary.name],
     tags: template.tags,
@@ -556,6 +751,7 @@ function buildPlanDays(
 
   return candidates.slice(0, days).map((candidate, index) => {
     const date = addDays(startOfDay(), index);
+    const consumptionSuggestions = buildConsumptionSuggestions(candidate.ingredients, usableInventory);
     return {
       id: `${candidate.id ?? "fallback"}-${index}`,
       date,
@@ -570,6 +766,7 @@ function buildPlanDays(
       inventoryCoverage: Math.round(candidate.coverage * 100),
       priorityItems: candidate.priorityItems,
       missingItems: candidate.missingItems.filter((item) => !isPantryStaple(item.name)),
+      consumptionSuggestions,
       tags: candidate.tags,
     };
   });
@@ -645,6 +842,98 @@ function buildShoppingSuggestions(
     });
 }
 
+function parseConsumptionSuggestions(input: unknown): MealPlanConsumptionSuggestion[] {
+  return parseJsonValue<MealPlanConsumptionSuggestion[]>(input, []).filter((item) => {
+    return Boolean(item?.productId && item?.name && item?.quantity);
+  });
+}
+
+function parseSavedMealStatus(value: string): SavedMealPlanItem["status"] {
+  if (value === "cooked" || value === "skipped") return value;
+  return "planned";
+}
+
+async function getActiveSavedMealPlan(household: UserHousehold | null): Promise<SavedMealPlan | null> {
+  if (!household) return null;
+
+  const plans = await db
+    .select({
+      id: schema.meal_plans.id,
+      name: schema.meal_plans.name,
+      status: schema.meal_plans.status,
+      startDate: schema.meal_plans.start_date,
+      endDate: schema.meal_plans.end_date,
+      createdAt: schema.meal_plans.created_at,
+      updatedAt: schema.meal_plans.updated_at,
+    })
+    .from(schema.meal_plans)
+    .where(and(eq(schema.meal_plans.household_id, household.id), eq(schema.meal_plans.status, "active")))
+    .orderBy(desc(schema.meal_plans.updated_at))
+    .limit(1);
+
+  const plan = plans[0] ?? null;
+  if (!plan) return null;
+
+  const itemRows = await db
+    .select({
+      id: schema.meal_plan_items.id,
+      recipeId: schema.meal_plan_items.recipe_id,
+      date: schema.meal_plan_items.meal_date,
+      title: schema.meal_plan_items.title,
+      description: schema.meal_plan_items.description,
+      status: schema.meal_plan_items.status,
+      cookTime: schema.meal_plan_items.cook_time,
+      servings: schema.meal_plan_items.servings,
+      score: schema.meal_plan_items.score,
+      priorityItems: schema.meal_plan_items.priority_items,
+      missingItems: schema.meal_plan_items.missing_items,
+      consumptionSuggestions: schema.meal_plan_items.consumption_suggestions,
+      cookedAt: schema.meal_plan_items.cooked_at,
+      skippedAt: schema.meal_plan_items.skipped_at,
+    })
+    .from(schema.meal_plan_items)
+    .where(eq(schema.meal_plan_items.meal_plan_id, plan.id))
+    .orderBy(asc(schema.meal_plan_items.meal_date));
+
+  const items = itemRows.map((item) => ({
+    id: item.id,
+    date: item.date,
+    dateLabel: formatPlanDate(item.date),
+    title: item.title,
+    description: item.description ?? null,
+    status: parseSavedMealStatus(item.status),
+    recipeId: item.recipeId ?? null,
+    cookTime: item.cookTime ?? null,
+    servings: item.servings ?? null,
+    score: item.score != null ? Number(item.score) : null,
+    priorityItems: parseJsonValue<string[]>(item.priorityItems, []),
+    missingItems: parseIngredients(item.missingItems),
+    consumptionSuggestions: parseConsumptionSuggestions(item.consumptionSuggestions),
+    cookedAt: item.cookedAt ?? null,
+    skippedAt: item.skippedAt ?? null,
+  }));
+
+  const cookedMeals = items.filter((item) => item.status === "cooked").length;
+  const skippedMeals = items.filter((item) => item.status === "skipped").length;
+
+  return {
+    id: plan.id,
+    name: plan.name,
+    status: plan.status,
+    startDate: plan.startDate,
+    endDate: plan.endDate,
+    createdAt: plan.createdAt,
+    updatedAt: plan.updatedAt,
+    items,
+    stats: {
+      totalMeals: items.length,
+      cookedMeals,
+      skippedMeals,
+      plannedMeals: Math.max(0, items.length - cookedMeals - skippedMeals),
+    },
+  };
+}
+
 export async function getMealPlanningPageData(
   userId: string,
   options: { days?: number } = {}
@@ -652,10 +941,11 @@ export async function getMealPlanningPageData(
   const days = clampPlanDays(options.days);
   const household = await getPrimaryHouseholdForUser(userId);
 
-  const [inventory, recipes, shopping] = await Promise.all([
+  const [inventory, recipes, shopping, savedPlan] = await Promise.all([
     getMealPlanningInventory(userId),
     getMealPlanningRecipes(userId, household),
     getShoppingSnapshot(household),
+    getActiveSavedMealPlan(household),
   ]);
   const scanner = await getScannerSignals(userId, inventory);
 
@@ -677,6 +967,7 @@ export async function getMealPlanningPageData(
 
   return {
     household,
+    savedPlan,
     planDays,
     shoppingSuggestions,
     expiringItems,
@@ -697,5 +988,209 @@ export async function getMealPlanningPageData(
       addableShoppingItems: shoppingSuggestions.filter((item) => !item.alreadyOnList).length,
       alreadyListedItems: shoppingSuggestions.filter((item) => item.alreadyOnList).length,
     },
+  };
+}
+
+export async function saveCurrentMealPlanForUser(
+  userId: string,
+  householdId: string,
+  options: { days?: number } = {}
+) {
+  const data = await getMealPlanningPageData(userId, options);
+  if (data.planDays.length === 0) {
+    throw new Error("No meal plan recommendations are available to save");
+  }
+
+  const startDate = data.planDays[0].date;
+  const endDate = data.planDays[data.planDays.length - 1].date;
+  const name = `Smart plan ${formatPlanDate(startDate)} - ${formatPlanDate(endDate)}`;
+
+  return db.transaction(async (tx) => {
+    await tx
+      .update(schema.meal_plans)
+      .set({
+        status: "archived",
+        updated_at: new Date(),
+      })
+      .where(and(eq(schema.meal_plans.household_id, householdId), eq(schema.meal_plans.status, "active")));
+
+    const insertedPlans = await tx
+      .insert(schema.meal_plans)
+      .values({
+        household_id: householdId,
+        created_by: userId,
+        name,
+        status: "active",
+        source: "smart_planner",
+        start_date: startDate,
+        end_date: endDate,
+        snapshot: {
+          generatedAt: new Date().toISOString(),
+          scanner: data.scanner,
+          shoppingSuggestions: data.shoppingSuggestions,
+          expiringItems: data.expiringItems.map((item) => ({
+            id: item.id,
+            name: item.name,
+            relativeExpiration: item.relativeExpiration,
+          })),
+        },
+        stats: data.stats,
+      })
+      .returning({ id: schema.meal_plans.id });
+
+    const plan = insertedPlans[0];
+    if (!plan) throw new Error("Unable to save meal plan");
+
+    await tx.insert(schema.meal_plan_items).values(
+      data.planDays.map((day) => ({
+        meal_plan_id: plan.id,
+        recipe_id: day.recipeId,
+        meal_date: day.date,
+        slot: "dinner",
+        title: day.title,
+        description: day.description,
+        status: "planned",
+        cook_time: day.cookTime,
+        servings: day.servings,
+        score: String(day.score),
+        priority_items: day.priorityItems,
+        missing_items: day.missingItems,
+        consumption_suggestions: day.consumptionSuggestions,
+        metadata: {
+          source: day.source,
+          inventoryCoverage: day.inventoryCoverage,
+          tags: day.tags,
+        },
+      }))
+    );
+
+    return {
+      id: plan.id,
+      itemCount: data.planDays.length,
+      name,
+    };
+  });
+}
+
+async function getMealPlanItemForHousehold(itemId: string, householdId: string) {
+  const rows = await db
+    .select({
+      id: schema.meal_plan_items.id,
+      status: schema.meal_plan_items.status,
+      title: schema.meal_plan_items.title,
+      consumptionSuggestions: schema.meal_plan_items.consumption_suggestions,
+      planId: schema.meal_plans.id,
+    })
+    .from(schema.meal_plan_items)
+    .innerJoin(schema.meal_plans, eq(schema.meal_plan_items.meal_plan_id, schema.meal_plans.id))
+    .where(and(eq(schema.meal_plan_items.id, itemId), eq(schema.meal_plans.household_id, householdId)))
+    .limit(1);
+
+  return rows[0] ?? null;
+}
+
+export async function markMealPlanItemCookedForUser(userId: string, householdId: string, itemId: string) {
+  const existing = await getMealPlanItemForHousehold(itemId, householdId);
+  if (!existing) throw new Error("Meal plan item was not found");
+
+  if (existing.status === "cooked") {
+    return {
+      usedCount: 0,
+      alreadyCooked: true,
+      title: existing.title,
+    };
+  }
+
+  const suggestions = parseConsumptionSuggestions(existing.consumptionSuggestions);
+
+  return db.transaction(async (tx) => {
+    let usedCount = 0;
+
+    for (const suggestion of suggestions) {
+      const productRows = await tx
+        .select({
+          id: schema.products.id,
+          name: schema.products.name,
+          quantity: schema.products.quantity,
+          unit: schema.products.unit,
+        })
+        .from(schema.products)
+        .where(and(eq(schema.products.id, suggestion.productId), eq(schema.products.user_id, userId)))
+        .limit(1);
+
+      const product = productRows[0];
+      if (!product) continue;
+
+      if (!unitsAreCompatible(product.unit, suggestion.unit ?? undefined)) continue;
+
+      const previousQuantity = toNumber(product.quantity);
+      const requestedQuantity = toNumber(suggestion.quantity);
+      const usedQuantity = Math.min(previousQuantity, requestedQuantity);
+      if (usedQuantity <= 0) continue;
+
+      const nextQuantity = Math.max(0, previousQuantity - usedQuantity);
+
+      await tx
+        .update(schema.products)
+        .set({
+          quantity: formatDecimal(nextQuantity),
+          updated_at: new Date(),
+        })
+        .where(and(eq(schema.products.id, product.id), eq(schema.products.user_id, userId)));
+
+      await tx.insert(schema.meal_plan_inventory_usages).values({
+        meal_plan_item_id: itemId,
+        product_id: product.id,
+        product_name: product.name,
+        quantity: formatDecimal(usedQuantity),
+        unit: product.unit ?? null,
+        previous_quantity: formatDecimal(previousQuantity),
+        next_quantity: formatDecimal(nextQuantity),
+        metadata: {
+          ingredientName: suggestion.ingredientName,
+          confidence: suggestion.confidence,
+          reason: suggestion.reason,
+        },
+      });
+
+      usedCount += 1;
+    }
+
+    await tx
+      .update(schema.meal_plan_items)
+      .set({
+        status: "cooked",
+        cooked_at: new Date(),
+        skipped_at: null,
+        updated_at: new Date(),
+      })
+      .where(eq(schema.meal_plan_items.id, itemId));
+
+    return {
+      usedCount,
+      alreadyCooked: false,
+      title: existing.title,
+    };
+  });
+}
+
+export async function skipMealPlanItemForHousehold(householdId: string, itemId: string) {
+  const existing = await getMealPlanItemForHousehold(itemId, householdId);
+  if (!existing) throw new Error("Meal plan item was not found");
+  if (existing.status === "cooked") {
+    throw new Error("Cooked meals cannot be skipped");
+  }
+
+  await db
+    .update(schema.meal_plan_items)
+    .set({
+      status: "skipped",
+      skipped_at: new Date(),
+      updated_at: new Date(),
+    })
+    .where(eq(schema.meal_plan_items.id, itemId));
+
+  return {
+    title: existing.title,
   };
 }

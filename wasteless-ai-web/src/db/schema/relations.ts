@@ -2,6 +2,9 @@ import { relations } from "drizzle-orm";
 import {
   barcode_products,
   categories,
+  meal_plan_inventory_usages,
+  meal_plan_items,
+  meal_plans,
   products,
   profiles,
   recipes,
@@ -16,6 +19,7 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   profile: one(profiles, { fields: [users.id], references: [profiles.id] }),
   categories: many(categories),
   products: many(products),
+  mealPlans: many(meal_plans),
   recipes: many(recipes),
   savedRecipes: many(saved_recipes),
   scanHistory: many(scan_history),
@@ -40,6 +44,26 @@ export const productsRelations = relations(products, ({ one }) => ({
 export const recipesRelations = relations(recipes, ({ one, many }) => ({
   creator: one(users, { fields: [recipes.created_by], references: [users.id] }),
   savedBy: many(saved_recipes),
+  mealPlanItems: many(meal_plan_items),
+}));
+
+export const mealPlansRelations = relations(meal_plans, ({ one, many }) => ({
+  creator: one(users, { fields: [meal_plans.created_by], references: [users.id] }),
+  items: many(meal_plan_items),
+}));
+
+export const mealPlanItemsRelations = relations(meal_plan_items, ({ one, many }) => ({
+  plan: one(meal_plans, { fields: [meal_plan_items.meal_plan_id], references: [meal_plans.id] }),
+  recipe: one(recipes, { fields: [meal_plan_items.recipe_id], references: [recipes.id] }),
+  inventoryUsages: many(meal_plan_inventory_usages),
+}));
+
+export const mealPlanInventoryUsagesRelations = relations(meal_plan_inventory_usages, ({ one }) => ({
+  item: one(meal_plan_items, {
+    fields: [meal_plan_inventory_usages.meal_plan_item_id],
+    references: [meal_plan_items.id],
+  }),
+  product: one(products, { fields: [meal_plan_inventory_usages.product_id], references: [products.id] }),
 }));
 
 export const savedRecipesRelations = relations(saved_recipes, ({ one }) => ({
