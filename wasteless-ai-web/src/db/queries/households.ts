@@ -2,6 +2,7 @@ import "server-only";
 
 import { db } from "@/db";
 import * as schema from "@/db/schema/tables";
+import { parseJsonValue } from "@/lib/dashboard-utils";
 import { eq } from "drizzle-orm";
 
 export type DashboardUser = {
@@ -18,8 +19,8 @@ export type UserHousehold = {
   timezone: string | null;
 };
 
-export async function getPrimaryHouseholdForUser(userId: string): Promise<UserHousehold | null> {
-  const rows = await db
+export async function getHouseholdsForUser(userId: string): Promise<UserHousehold[]> {
+  return db
     .select({
       id: schema.households.id,
       name: schema.households.name,
@@ -29,10 +30,21 @@ export async function getPrimaryHouseholdForUser(userId: string): Promise<UserHo
     })
     .from(schema.household_members)
     .innerJoin(schema.households, eq(schema.household_members.household_id, schema.households.id))
-    .where(eq(schema.household_members.user_id, userId))
-    .limit(1);
+    .where(eq(schema.household_members.user_id, userId));
+}
 
-  return rows[0] ?? null;
+export async function getPrimaryHouseholdForUser(userId: string): Promise<UserHousehold | null> {
+  const [households, userRows] = await Promise.all([
+    getHouseholdsForUser(userId),
+    db.select({ meta: schema.users.meta }).from(schema.users).where(eq(schema.users.id, userId)).limit(1),
+  ]);
+
+  if (households.length === 0) return null;
+
+  const meta = parseJsonValue<Record<string, unknown>>(userRows[0]?.meta ?? {}, {});
+  const activeHouseholdId = typeof meta.activeHouseholdId === "string" ? meta.activeHouseholdId : null;
+
+  return households.find((household) => household.id === activeHouseholdId) ?? households[0] ?? null;
 }
 
 export async function ensurePersonalHouseholdForUser(user: DashboardUser) {
@@ -75,6 +87,20 @@ export async function ensurePersonalHouseholdForUser(user: DashboardUser) {
     user_id: user.id,
     role: "owner",
   });
+
+  const userRows = await db.select({ meta: schema.users.meta }).from(schema.users).where(eq(schema.users.id, user.id)).limit(1);
+  const meta = parseJsonValue<Record<string, unknown>>(userRows[0]?.meta ?? {}, {});
+
+  await db
+    .update(schema.users)
+    .set({
+      meta: {
+        ...meta,
+        activeHouseholdId: createdHousehold.id,
+      },
+      updated_at: new Date(),
+    })
+    .where(eq(schema.users.id, user.id));
 
   return {
     ...createdHousehold,

@@ -43,6 +43,13 @@
       "when": 1790020800000,
       "tag": "0005_colossal_hardball",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790107200000,
+      "tag": "0006_household_collaboration",
+      "breakpoints": true
     }
   ]
 }

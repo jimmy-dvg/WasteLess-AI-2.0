@@ -11,6 +11,8 @@ async function resetDatabase() {
     // Order matters: foreign keys must be dropped last
     schema.ai_generation_links,
     schema.ai_generations,
+    schema.household_activity_events,
+    schema.household_invitations,
     schema.inventory_item_changes,
     schema.waste_logs,
     schema.notifications,

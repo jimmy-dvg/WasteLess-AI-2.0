@@ -2,12 +2,16 @@
 
 import { revalidatePath } from "next/cache";
 import { parseDateInput } from "@/lib/date";
+import { requireUser } from "@/lib/auth";
 import { requireUserId } from "@/lib/authz";
+import { ensurePersonalHouseholdForUser } from "@/db/queries/households";
+import { recordHouseholdActivity } from "@/features/household/services/household.service";
 import {
   createCategory,
   createProduct,
   deleteCategory,
   deleteProduct,
+  getProductById,
   updateCategory,
   updateProduct,
 } from "@/services/inventory.service";
@@ -30,7 +34,7 @@ export async function createProductAction(
   _prevState: InventoryActionState,
   formData: FormData
 ): Promise<InventoryActionState> {
-  const userId = await requireUserId();
+  const user = await requireUser();
   const parsed = productSchema.safeParse(Object.fromEntries(formData.entries()));
 
   if (!parsed.success) {
@@ -60,7 +64,8 @@ export async function createProductAction(
   }
 
   try {
-    const created = await createProduct(userId, {
+    const household = await ensurePersonalHouseholdForUser(user);
+    const created = await createProduct(user.id, {
       name: parsed.data.name,
       quantity,
       unit: parsed.data.unit || null,
@@ -77,6 +82,20 @@ export async function createProductAction(
 
     revalidatePath("/dashboard");
     revalidatePath("/dashboard/inventory");
+    revalidatePath("/dashboard/household");
+
+    await recordHouseholdActivity({
+      householdId: household.id,
+      actorUserId: user.id,
+      eventType: "inventory_product_created",
+      objectType: "product",
+      objectId: created.id,
+      summary: `${user.name} added ${parsed.data.name} to inventory.`,
+      metadata: {
+        quantity,
+        unit: parsed.data.unit || null,
+      },
+    }).catch(() => undefined);
 
     return {
       success: true,
@@ -94,7 +113,7 @@ export async function updateProductAction(
   _prevState: InventoryActionState,
   formData: FormData
 ): Promise<InventoryActionState> {
-  const userId = await requireUserId();
+  const user = await requireUser();
   const parsed = productUpdateSchema.safeParse(Object.fromEntries(formData.entries()));
 
   if (!parsed.success) {
@@ -125,7 +144,8 @@ export async function updateProductAction(
   }
 
   try {
-    const updated = await updateProduct(userId, parsed.data.id, {
+    const household = await ensurePersonalHouseholdForUser(user);
+    const updated = await updateProduct(user.id, parsed.data.id, {
       name: parsed.data.name,
       quantity,
       unit: parsed.data.unit || null,
@@ -142,6 +162,16 @@ export async function updateProductAction(
 
     revalidatePath("/dashboard");
     revalidatePath("/dashboard/inventory");
+    revalidatePath("/dashboard/household");
+
+    await recordHouseholdActivity({
+      householdId: household.id,
+      actorUserId: user.id,
+      eventType: "inventory_product_updated",
+      objectType: "product",
+      objectId: parsed.data.id,
+      summary: `${user.name} updated ${parsed.data.name ?? "an inventory item"}.`,
+    }).catch(() => undefined);
 
     return {
       success: true,
@@ -156,16 +186,28 @@ export async function updateProductAction(
 }
 
 export async function deleteProductAction(productId: string): Promise<InventoryActionState> {
-  const userId = await requireUserId();
+  const user = await requireUser();
 
   try {
-    const deleted = await deleteProduct(userId, productId);
+    const household = await ensurePersonalHouseholdForUser(user);
+    const product = await getProductById(user.id, productId);
+    const deleted = await deleteProduct(user.id, productId);
     if (!deleted) {
       return { success: false, error: "Product not found" };
     }
 
     revalidatePath("/dashboard");
     revalidatePath("/dashboard/inventory");
+    revalidatePath("/dashboard/household");
+
+    await recordHouseholdActivity({
+      householdId: household.id,
+      actorUserId: user.id,
+      eventType: "inventory_product_deleted",
+      objectType: "product",
+      objectId: productId,
+      summary: `${user.name} removed ${product?.name ?? "an inventory item"} from inventory.`,
+    }).catch(() => undefined);
 
     return {
       success: true,

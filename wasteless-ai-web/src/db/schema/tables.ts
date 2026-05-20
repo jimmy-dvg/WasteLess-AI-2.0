@@ -49,16 +49,88 @@ export const households = pgTable("households", {
   updated_at: timestamp("updated_at").defaultNow().notNull(),
 });
 
-export const household_members = pgTable("household_members", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  household_id: uuid("household_id").notNull(),
-  user_id: uuid("user_id").notNull(),
-  role: varchar("role", { length: 20 }).notNull().default("member"),
-  joined_at: timestamp("joined_at").defaultNow().notNull(),
-  last_active_at: timestamp("last_active_at"),
-  created_at: timestamp("created_at").defaultNow().notNull(),
-  updated_at: timestamp("updated_at").defaultNow().notNull(),
-});
+export const household_members = pgTable(
+  "household_members",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    household_id: uuid("household_id")
+      .notNull()
+      .references(() => households.id, { onDelete: "cascade" }),
+    user_id: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    role: varchar("role", { length: 20 }).notNull().default("member"),
+    joined_at: timestamp("joined_at").defaultNow().notNull(),
+    last_active_at: timestamp("last_active_at"),
+    created_at: timestamp("created_at").defaultNow().notNull(),
+    updated_at: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    householdIdx: index("household_members_household_id_idx").on(table.household_id),
+    userIdx: index("household_members_user_id_idx").on(table.user_id),
+    householdUserUnique: uniqueIndex("household_members_household_user_unique").on(
+      table.household_id,
+      table.user_id
+    ),
+  })
+);
+
+export const household_invitations = pgTable(
+  "household_invitations",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    household_id: uuid("household_id")
+      .notNull()
+      .references(() => households.id, { onDelete: "cascade" }),
+    email: varchar("email", { length: 320 }).notNull(),
+    role: varchar("role", { length: 20 }).notNull().default("member"),
+    token: varchar("token", { length: 128 }).notNull(),
+    status: varchar("status", { length: 32 }).notNull().default("pending"),
+    invited_by: uuid("invited_by").references(() => users.id, { onDelete: "set null" }),
+    accepted_by: uuid("accepted_by").references(() => users.id, { onDelete: "set null" }),
+    expires_at: timestamp("expires_at").notNull(),
+    accepted_at: timestamp("accepted_at"),
+    declined_at: timestamp("declined_at"),
+    created_at: timestamp("created_at").defaultNow().notNull(),
+    updated_at: timestamp("updated_at").defaultNow().notNull(),
+    metadata: jsonb("metadata").default({}).notNull(),
+  },
+  (table) => ({
+    tokenUnique: uniqueIndex("household_invitations_token_unique").on(table.token),
+    householdStatusIdx: index("household_invitations_household_status_idx").on(
+      table.household_id,
+      table.status
+    ),
+    emailStatusIdx: index("household_invitations_email_status_idx").on(table.email, table.status),
+  })
+);
+
+export const household_activity_events = pgTable(
+  "household_activity_events",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    household_id: uuid("household_id")
+      .notNull()
+      .references(() => households.id, { onDelete: "cascade" }),
+    actor_user_id: uuid("actor_user_id").references(() => users.id, { onDelete: "set null" }),
+    event_type: varchar("event_type", { length: 64 }).notNull(),
+    object_type: varchar("object_type", { length: 64 }),
+    object_id: uuid("object_id"),
+    summary: text("summary").notNull(),
+    metadata: jsonb("metadata").default({}).notNull(),
+    created_at: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    householdCreatedIdx: index("household_activity_events_household_created_idx").on(
+      table.household_id,
+      table.created_at
+    ),
+    actorCreatedIdx: index("household_activity_events_actor_created_idx").on(
+      table.actor_user_id,
+      table.created_at
+    ),
+  })
+);
 
 export const categories = pgTable(
   "categories",

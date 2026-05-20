@@ -2,6 +2,9 @@ import { relations } from "drizzle-orm";
 import {
   barcode_products,
   categories,
+  household_activity_events,
+  household_invitations,
+  household_members,
   households,
   meal_plan_inventory_usages,
   meal_plan_items,
@@ -18,6 +21,9 @@ import {
 
 export const usersRelations = relations(users, ({ one, many }) => ({
   profile: one(profiles, { fields: [users.id], references: [profiles.id] }),
+  householdMemberships: many(household_members),
+  householdInvitationsSent: many(household_invitations),
+  householdActivityEvents: many(household_activity_events),
   categories: many(categories),
   products: many(products),
   mealPlans: many(meal_plans),
@@ -30,6 +36,28 @@ export const usersRelations = relations(users, ({ one, many }) => ({
 
 export const profilesRelations = relations(profiles, ({ one }) => ({
   user: one(users, { fields: [profiles.id], references: [users.id] }),
+}));
+
+export const householdsRelations = relations(households, ({ many }) => ({
+  members: many(household_members),
+  invitations: many(household_invitations),
+  activityEvents: many(household_activity_events),
+}));
+
+export const householdMembersRelations = relations(household_members, ({ one }) => ({
+  household: one(households, { fields: [household_members.household_id], references: [households.id] }),
+  user: one(users, { fields: [household_members.user_id], references: [users.id] }),
+}));
+
+export const householdInvitationsRelations = relations(household_invitations, ({ one }) => ({
+  household: one(households, { fields: [household_invitations.household_id], references: [households.id] }),
+  invitedBy: one(users, { fields: [household_invitations.invited_by], references: [users.id] }),
+  acceptedBy: one(users, { fields: [household_invitations.accepted_by], references: [users.id] }),
+}));
+
+export const householdActivityEventsRelations = relations(household_activity_events, ({ one }) => ({
+  household: one(households, { fields: [household_activity_events.household_id], references: [households.id] }),
+  actor: one(users, { fields: [household_activity_events.actor_user_id], references: [users.id] }),
 }));
 
 export const categoriesRelations = relations(categories, ({ one, many }) => ({
