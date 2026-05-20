@@ -1,8 +1,9 @@
 import "server-only";
 
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, or } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
+import { getPrimaryHouseholdForUser } from "@/db/queries/households";
 import * as schema from "@/db/schema/tables";
 import { parseDateInput } from "@/lib/date";
 import type {
@@ -15,6 +16,19 @@ import type {
   ScanStatus,
   ScanType,
 } from "@/scanning/types";
+
+async function getProductImportScope(userId: string) {
+  const household = await getPrimaryHouseholdForUser(userId);
+  return {
+    household,
+    productCondition: household
+      ? or(
+          eq(schema.products.household_id, household.id),
+          and(isNull(schema.products.household_id), eq(schema.products.user_id, userId))
+        )!
+      : eq(schema.products.user_id, userId),
+  };
+}
 
 export async function createScanHistoryEntry(
   userId: string,
@@ -117,6 +131,7 @@ export async function getRecentImportBatches(userId: string, limit = 8): Promise
 }
 
 export async function undoScanImportBatch(userId: string, batchId: string) {
+  const scope = await getProductImportScope(userId);
   const rows = await db
     .select()
     .from(schema.scan_import_batches)
@@ -132,7 +147,7 @@ export async function undoScanImportBatch(userId: string, batchId: string) {
 
   const deletedRows = await db
     .delete(schema.products)
-    .where(and(eq(schema.products.user_id, userId), inArray(schema.products.id, productIds)))
+    .where(and(scope.productCondition, inArray(schema.products.id, productIds)))
     .returning({ id: schema.products.id });
 
   await db
@@ -240,12 +255,15 @@ export async function importReceiptItemsToInventory(
   const purchaseDate = data.purchaseDate ? parseDateInput(data.purchaseDate) : new Date();
   const categoryIds = await resolveCategoryIds(userId, selectedItems);
   const source = data.source ?? "receipt";
+  const scope = await getProductImportScope(userId);
 
   const inserted = await db
     .insert(schema.products)
     .values(
       selectedItems.map((item, index) => ({
         user_id: userId,
+        household_id: scope.household?.id ?? null,
+        owner_user_id: userId,
         category_id: categoryIds[index],
         name: item.normalizedName || item.name,
         quantity: String(item.quantity || 1),
@@ -315,6 +333,7 @@ export async function importBarcodeProductToInventory(
     metadata?: Record<string, unknown> | BarcodeProductMetadata;
   }
 ) {
+  const scope = await getProductImportScope(userId);
   const categoryId = (
     await resolveCategoryIds(userId, [
       {
@@ -338,6 +357,8 @@ export async function importBarcodeProductToInventory(
     .insert(schema.products)
     .values({
       user_id: userId,
+      household_id: scope.household?.id ?? null,
+      owner_user_id: userId,
       category_id: categoryId,
       name: data.name,
       quantity: String(data.quantity || 1),

@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { ensurePersonalHouseholdForUser } from "@/db/queries/households";
+import { canEditHouseholdInventory } from "@/features/household/constants";
 import { requireUser } from "@/lib/auth";
 import {
   createScanHistoryEntry,
@@ -21,6 +23,14 @@ export async function POST(request: Request) {
   }
 
   try {
+    const household = await ensurePersonalHouseholdForUser(user);
+    if (!canEditHouseholdInventory(household.role)) {
+      return NextResponse.json(
+        { success: false, error: "You do not have permission to change this household inventory." },
+        { status: 403 }
+      );
+    }
+
     const created = await importBarcodeProductToInventory(user.id, parsed.data);
 
     if (!created) {

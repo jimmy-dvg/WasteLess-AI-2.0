@@ -2,6 +2,7 @@ import "server-only";
 
 import { db } from "@/db";
 import * as schema from "@/db/schema/tables";
+import { getPrimaryHouseholdForUser } from "@/db/queries/households";
 import {
   addDays,
   formatRelativeExpiration,
@@ -9,12 +10,21 @@ import {
   getExpirationStatus,
   startOfDay,
 } from "@/lib/dashboard-utils";
-import { and, asc, count, desc, eq, gte, lte, lt } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, isNull, lte, lt, or } from "drizzle-orm";
 
 export async function getDashboardOverview(userId: string) {
   const today = startOfDay();
   const soon = addDays(today, 7);
-  const activeInventory = eq(schema.products.user_id, userId);
+  const household = await getPrimaryHouseholdForUser(userId);
+  const activeInventory = household
+    ? or(
+        eq(schema.products.household_id, household.id),
+        and(isNull(schema.products.household_id), eq(schema.products.user_id, userId))
+      )!
+    : eq(schema.products.user_id, userId);
+  const activeCategories = household
+    ? or(eq(schema.categories.user_id, userId), eq(schema.categories.household_id, household.id))!
+    : eq(schema.categories.user_id, userId);
 
   const [totalProductsRow, expiringSoonRow, expiredItemsRow, categoriesRow] = await Promise.all([
     db.select({ value: count() }).from(schema.products).where(activeInventory),
@@ -32,7 +42,7 @@ export async function getDashboardOverview(userId: string) {
       .select({ value: count() })
       .from(schema.products)
       .where(and(activeInventory, lt(schema.products.expiration_date, today))),
-    db.select({ value: count() }).from(schema.categories).where(eq(schema.categories.user_id, userId)),
+    db.select({ value: count() }).from(schema.categories).where(activeCategories),
   ]);
 
   const [recentRows, soonRows] = await Promise.all([
@@ -101,7 +111,7 @@ export async function getDashboardOverview(userId: string) {
   ];
 
   return {
-    household: null,
+    household,
     stats,
     recentInventory,
     insights,

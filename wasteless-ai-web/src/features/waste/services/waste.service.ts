@@ -5,7 +5,7 @@ import { getPrimaryHouseholdForUser, type UserHousehold } from "@/db/queries/hou
 import * as schema from "@/db/schema/tables";
 import { addDays, formatQuantity, startOfDay } from "@/lib/dashboard-utils";
 import { getWasteReasonLabel, type WasteReason } from "@/features/waste/constants";
-import { and, count, desc, eq, gte } from "drizzle-orm";
+import { and, count, desc, eq, gte, isNull, or } from "drizzle-orm";
 
 export type WasteLogEntry = {
   id: string;
@@ -53,6 +53,13 @@ function normalizeNotes(value?: string | null) {
   return notes ? notes : null;
 }
 
+function getHouseholdProductAccessCondition(userId: string, householdId: string) {
+  return or(
+    eq(schema.products.household_id, householdId),
+    and(isNull(schema.products.household_id), eq(schema.products.user_id, userId))
+  )!;
+}
+
 function emptyWastePageData(household: UserHousehold | null): WastePageData {
   return {
     household,
@@ -89,7 +96,12 @@ export async function logProductWasteForUser(input: {
         unit: schema.products.unit,
       })
       .from(schema.products)
-      .where(and(eq(schema.products.id, input.productId), eq(schema.products.user_id, input.userId)))
+      .where(
+        and(
+          eq(schema.products.id, input.productId),
+          getHouseholdProductAccessCondition(input.userId, input.householdId)
+        )
+      )
       .limit(1);
 
     const product = productRows[0];
@@ -123,7 +135,12 @@ export async function logProductWasteForUser(input: {
         quantity: formatDecimal(nextQuantity),
         updated_at: new Date(),
       })
-      .where(and(eq(schema.products.id, product.id), eq(schema.products.user_id, input.userId)));
+      .where(
+        and(
+          eq(schema.products.id, product.id),
+          getHouseholdProductAccessCondition(input.userId, input.householdId)
+        )
+      );
 
     return {
       productName: product.name,

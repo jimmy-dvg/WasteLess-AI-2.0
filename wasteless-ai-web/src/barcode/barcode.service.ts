@@ -1,7 +1,8 @@
 import "server-only";
 
-import { and, desc, eq, or } from "drizzle-orm";
+import { and, desc, eq, isNull, or } from "drizzle-orm";
 import { db } from "@/db";
+import { getPrimaryHouseholdForUser } from "@/db/queries/households";
 import * as schema from "@/db/schema/tables";
 import { getCachedValue, setCachedValue } from "@/lib/cache";
 import { estimateShelfLife } from "@/scanning/shelf-life";
@@ -316,10 +317,17 @@ async function cacheBarcodeProduct(product: BarcodeProductMetadata) {
 }
 
 async function findDuplicates(userId: string, barcode: string, productName?: string): Promise<ScannedProductDuplicate[]> {
+  const household = await getPrimaryHouseholdForUser(userId);
   const nameCondition = productName ? eq(schema.products.name, productName) : undefined;
   const duplicateCondition = nameCondition
     ? or(eq(schema.products.gtin, barcode), nameCondition)
     : eq(schema.products.gtin, barcode);
+  const scopeCondition = household
+    ? or(
+        eq(schema.products.household_id, household.id),
+        and(isNull(schema.products.household_id), eq(schema.products.user_id, userId))
+      )!
+    : eq(schema.products.user_id, userId);
 
   const rows = await db
     .select({
@@ -331,7 +339,7 @@ async function findDuplicates(userId: string, barcode: string, productName?: str
       storageLocation: schema.products.storage_location,
     })
     .from(schema.products)
-    .where(and(eq(schema.products.user_id, userId), duplicateCondition))
+    .where(and(scopeCondition, duplicateCondition))
     .orderBy(desc(schema.products.created_at))
     .limit(5);
 

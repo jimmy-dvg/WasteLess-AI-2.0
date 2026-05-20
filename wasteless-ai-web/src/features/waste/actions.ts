@@ -1,6 +1,7 @@
 "use server";
 
 import { ensurePersonalHouseholdForUser } from "@/db/queries/households";
+import { canEditHouseholdInventory } from "@/features/household/constants";
 import { logProductWasteForUser } from "@/features/waste/services/waste.service";
 import { requireUser } from "@/lib/auth";
 import { wasteLogSchema } from "@/validation/waste";
@@ -35,6 +36,13 @@ export async function logProductWasteAction(
   try {
     const user = await requireUser();
     const household = await ensurePersonalHouseholdForUser(user);
+    if (!canEditHouseholdInventory(household.role)) {
+      return {
+        success: false,
+        error: "You do not have permission to change this household inventory.",
+      };
+    }
+
     const result = await logProductWasteForUser({
       userId: user.id,
       householdId: household.id,

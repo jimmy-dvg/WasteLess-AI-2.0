@@ -24,6 +24,10 @@ export function canManageHousehold(role?: string | null) {
   return role === "owner" || role === "admin";
 }
 
+export function canEditHouseholdInventory(role?: string | null) {
+  return role === "owner" || role === "admin" || role === "member";
+}
+
 export function canManageRole(actorRole: string | null | undefined, targetRole: string | null | undefined) {
   if (actorRole === "owner") return true;
   if (actorRole === "admin") return targetRole !== "owner";

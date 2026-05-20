@@ -156,6 +156,8 @@ export const products = pgTable(
   {
     id: uuid("id").defaultRandom().primaryKey(),
     user_id: uuid("user_id").references(() => users.id, { onDelete: "cascade" }),
+    household_id: uuid("household_id").references(() => households.id, { onDelete: "cascade" }),
+    owner_user_id: uuid("owner_user_id").references(() => users.id, { onDelete: "set null" }),
     category_id: uuid("category_id").references(() => categories.id, { onDelete: "set null" }),
     name: text("name").notNull(),
     quantity: numeric("quantity", { precision: 10, scale: 2 }).default("1"),
@@ -175,6 +177,8 @@ export const products = pgTable(
   },
   (table) => ({
     userIdx: index("products_user_id_idx").on(table.user_id),
+    householdIdx: index("products_household_id_idx").on(table.household_id),
+    ownerIdx: index("products_owner_user_id_idx").on(table.owner_user_id),
     categoryIdx: index("products_category_id_idx").on(table.category_id),
     expirationIdx: index("products_expiration_idx").on(table.expiration_date),
     nameIdx: index("products_name_idx").on(table.name),

@@ -16,7 +16,7 @@ import {
   HOUSEHOLD_ROLE_LABELS,
   type HouseholdRole,
 } from "@/features/household/constants";
-import { and, asc, count, desc, eq, inArray } from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray, isNull, or } from "drizzle-orm";
 
 const INVITATION_DAYS = 7;
 
@@ -240,10 +240,15 @@ export async function getHouseholdCollaborationData(user: DashboardUser): Promis
   ]);
 
   const memberUserIds = memberRows.map((member) => member.userId);
-  const [inventoryRows, shoppingRows, mealRows, wasteRows] = await Promise.all([
+  const sharedProductCondition =
     memberUserIds.length > 0
-      ? db.select({ value: count() }).from(schema.products).where(inArray(schema.products.user_id, memberUserIds))
-      : Promise.resolve([{ value: 0 }]),
+      ? or(
+          eq(schema.products.household_id, household.id),
+          and(isNull(schema.products.household_id), inArray(schema.products.user_id, memberUserIds))
+        )!
+      : eq(schema.products.household_id, household.id);
+  const [inventoryRows, shoppingRows, mealRows, wasteRows] = await Promise.all([
+    db.select({ value: count() }).from(schema.products).where(sharedProductCondition),
     db
       .select({ value: count() })
       .from(schema.shopping_list_items)

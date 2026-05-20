@@ -5,6 +5,7 @@ import { parseDateInput } from "@/lib/date";
 import { requireUser } from "@/lib/auth";
 import { requireUserId } from "@/lib/authz";
 import { ensurePersonalHouseholdForUser } from "@/db/queries/households";
+import { canEditHouseholdInventory } from "@/features/household/constants";
 import { recordHouseholdActivity } from "@/features/household/services/household.service";
 import {
   createCategory,
@@ -28,6 +29,13 @@ function parseQuantity(value: string) {
   const numeric = Number(value);
   if (!Number.isFinite(numeric) || numeric <= 0) return null;
   return value;
+}
+
+function cannotEditInventoryState(): InventoryActionState {
+  return {
+    success: false,
+    error: "You do not have permission to change this household inventory.",
+  };
 }
 
 export async function createProductAction(
@@ -65,7 +73,10 @@ export async function createProductAction(
 
   try {
     const household = await ensurePersonalHouseholdForUser(user);
+    if (!canEditHouseholdInventory(household.role)) return cannotEditInventoryState();
+
     const created = await createProduct(user.id, {
+      householdId: household.id,
       name: parsed.data.name,
       quantity,
       unit: parsed.data.unit || null,
@@ -145,7 +156,10 @@ export async function updateProductAction(
 
   try {
     const household = await ensurePersonalHouseholdForUser(user);
+    if (!canEditHouseholdInventory(household.role)) return cannotEditInventoryState();
+
     const updated = await updateProduct(user.id, parsed.data.id, {
+      householdId: household.id,
       name: parsed.data.name,
       quantity,
       unit: parsed.data.unit || null,
@@ -190,8 +204,10 @@ export async function deleteProductAction(productId: string): Promise<InventoryA
 
   try {
     const household = await ensurePersonalHouseholdForUser(user);
+    if (!canEditHouseholdInventory(household.role)) return cannotEditInventoryState();
+
     const product = await getProductById(user.id, productId);
-    const deleted = await deleteProduct(user.id, productId);
+    const deleted = await deleteProduct(user.id, household.id, productId);
     if (!deleted) {
       return { success: false, error: "Product not found" };
     }

@@ -2,6 +2,7 @@
 
 import { ensurePersonalHouseholdForUser } from "@/db/queries/households";
 import { requireUser } from "@/lib/auth";
+import { canEditHouseholdInventory } from "@/features/household/constants";
 import {
   getMealPlanningPageData,
   markMealPlanItemCookedForUser,
@@ -33,6 +34,13 @@ function revalidateMealPlanPaths() {
   revalidatePath("/dashboard/meal-plan");
   revalidatePath("/dashboard/inventory");
   revalidatePath("/dashboard/shopping");
+}
+
+function cannotEditInventoryState(): MealPlanActionState {
+  return {
+    success: false,
+    error: "You do not have permission to change this household inventory.",
+  };
 }
 
 export async function addOptimizedShoppingItemsAction(
@@ -139,6 +147,8 @@ export async function markMealPlanItemCookedAction(
   try {
     const user = await requireUser();
     const household = await ensurePersonalHouseholdForUser(user);
+    if (!canEditHouseholdInventory(household.role)) return cannotEditInventoryState();
+
     const result = await markMealPlanItemCookedForUser(user.id, household.id, parsed.data.itemId);
 
     revalidateMealPlanPaths();
@@ -213,6 +223,8 @@ export async function reopenMealPlanItemAction(
   try {
     const user = await requireUser();
     const household = await ensurePersonalHouseholdForUser(user);
+    if (!canEditHouseholdInventory(household.role)) return cannotEditInventoryState();
+
     const result = await reopenMealPlanItemForUser(user.id, household.id, parsed.data.itemId);
 
     revalidateMealPlanPaths();

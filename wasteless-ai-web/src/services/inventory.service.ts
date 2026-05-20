@@ -2,10 +2,11 @@ import "server-only";
 
 import { db } from "@/db";
 import * as schema from "@/db/schema/tables";
+import { getPrimaryHouseholdForUser } from "@/db/queries/households";
 import { getSoonWindow } from "@/lib/date";
 import { formatQuantity, getExpirationStatus } from "@/lib/dashboard-utils";
 import type { InventoryCategory, InventoryFilters, InventoryPageData, InventoryProduct } from "@/types/inventory";
-import { and, asc, count, desc, eq, ilike, lte, lt, or, gte, type SQL } from "drizzle-orm";
+import { and, asc, count, desc, eq, ilike, isNull, lte, lt, or, gte, type SQL } from "drizzle-orm";
 
 const LOW_STOCK_THRESHOLD = 1;
 
@@ -14,7 +15,25 @@ function toQuantityString(value: unknown) {
   return String(value);
 }
 
+async function getInventoryScope(userId: string) {
+  const household = await getPrimaryHouseholdForUser(userId);
+
+  return {
+    household,
+    productCondition: household
+      ? or(
+          eq(schema.products.household_id, household.id),
+          and(isNull(schema.products.household_id), eq(schema.products.user_id, userId))
+        )!
+      : eq(schema.products.user_id, userId),
+    categoryCondition: household
+      ? or(eq(schema.categories.user_id, userId), eq(schema.categories.household_id, household.id))!
+      : eq(schema.categories.user_id, userId),
+  };
+}
+
 export async function getCategoriesForUser(userId: string): Promise<InventoryCategory[]> {
+  const scope = await getInventoryScope(userId);
   const rows = await db
     .select({
       id: schema.categories.id,
@@ -23,7 +42,7 @@ export async function getCategoriesForUser(userId: string): Promise<InventoryCat
       createdAt: schema.categories.created_at,
     })
     .from(schema.categories)
-    .where(eq(schema.categories.user_id, userId))
+    .where(scope.categoryCondition)
     .orderBy(asc(schema.categories.name));
 
   return rows.map((row) => ({
@@ -38,7 +57,8 @@ export async function getInventoryPageData(
   userId: string,
   filters: InventoryFilters
 ): Promise<InventoryPageData> {
-  const conditions: SQL[] = [eq(schema.products.user_id, userId)];
+  const scope = await getInventoryScope(userId);
+  const conditions: SQL[] = [scope.productCondition];
 
   if (filters.query) {
     const pattern = `%${filters.query}%`;
@@ -121,14 +141,14 @@ export async function getInventoryPageData(
         createdAt: schema.categories.created_at,
       })
       .from(schema.categories)
-      .where(eq(schema.categories.user_id, userId))
+      .where(scope.categoryCondition)
       .orderBy(asc(schema.categories.name)),
     db
       .select({
         location: schema.products.storage_location,
       })
       .from(schema.products)
-      .where(eq(schema.products.user_id, userId)),
+      .where(scope.productCondition),
   ]);
 
   const totalCount = Number(countRow[0]?.value ?? 0);
@@ -176,6 +196,7 @@ export async function getInventoryPageData(
 }
 
 export async function getProductById(userId: string, productId: string) {
+  const scope = await getInventoryScope(userId);
   const rows = await db
     .select({
       id: schema.products.id,
@@ -194,7 +215,7 @@ export async function getProductById(userId: string, productId: string) {
     })
     .from(schema.products)
     .leftJoin(schema.categories, eq(schema.products.category_id, schema.categories.id))
-    .where(and(eq(schema.products.id, productId), eq(schema.products.user_id, userId)))
+    .where(and(eq(schema.products.id, productId), scope.productCondition))
     .limit(1);
 
   const row = rows[0];
@@ -269,6 +290,7 @@ export async function deleteCategory(userId: string, categoryId: string) {
 }
 
 export async function createProduct(userId: string, data: {
+  householdId: string;
   name: string;
   quantity: string;
   unit?: string | null;
@@ -282,6 +304,8 @@ export async function createProduct(userId: string, data: {
     .insert(schema.products)
     .values({
       user_id: userId,
+      household_id: data.householdId,
+      owner_user_id: userId,
       category_id: data.categoryId ?? null,
       name: data.name,
       quantity: data.quantity,
@@ -300,6 +324,7 @@ export async function updateProduct(
   userId: string,
   productId: string,
   data: {
+    householdId: string;
     name?: string;
     quantity?: string;
     unit?: string | null;
@@ -323,16 +348,32 @@ export async function updateProduct(
       notes: data.notes ?? null,
       updated_at: new Date(),
     })
-    .where(and(eq(schema.products.id, productId), eq(schema.products.user_id, userId)))
+    .where(
+      and(
+        eq(schema.products.id, productId),
+        or(
+          eq(schema.products.household_id, data.householdId),
+          and(isNull(schema.products.household_id), eq(schema.products.user_id, userId))
+        )!
+      )
+    )
     .returning({ id: schema.products.id });
 
   return rows[0] ?? null;
 }
 
-export async function deleteProduct(userId: string, productId: string) {
+export async function deleteProduct(userId: string, householdId: string, productId: string) {
   const rows = await db
     .delete(schema.products)
-    .where(and(eq(schema.products.id, productId), eq(schema.products.user_id, userId)))
+    .where(
+      and(
+        eq(schema.products.id, productId),
+        or(
+          eq(schema.products.household_id, householdId),
+          and(isNull(schema.products.household_id), eq(schema.products.user_id, userId))
+        )!
+      )
+    )
     .returning({ id: schema.products.id });
 
   return rows[0] ?? null;

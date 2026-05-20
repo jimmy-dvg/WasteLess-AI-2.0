@@ -16,7 +16,7 @@ import {
   type ExpirationStatus,
 } from "@/lib/dashboard-utils";
 import type { RecipeIngredient, RecipeInventoryItem } from "@/types/recipes";
-import { and, asc, desc, eq, or } from "drizzle-orm";
+import { and, asc, desc, eq, isNull, or } from "drizzle-orm";
 
 const DEFAULT_PLAN_DAYS = 5;
 const MAX_PLAN_DAYS = 7;
@@ -442,7 +442,19 @@ function buildConsumptionSuggestions(
     .slice(0, 8);
 }
 
-async function getMealPlanningInventory(userId: string): Promise<MealPlanInventoryItem[]> {
+function getHouseholdProductAccessCondition(userId: string, householdId?: string | null) {
+  return householdId
+    ? or(
+        eq(schema.products.household_id, householdId),
+        and(isNull(schema.products.household_id), eq(schema.products.user_id, userId))
+      )!
+    : eq(schema.products.user_id, userId);
+}
+
+async function getMealPlanningInventory(
+  userId: string,
+  household: UserHousehold | null
+): Promise<MealPlanInventoryItem[]> {
   const rows = await db
     .select({
       id: schema.products.id,
@@ -456,7 +468,7 @@ async function getMealPlanningInventory(userId: string): Promise<MealPlanInvento
     })
     .from(schema.products)
     .leftJoin(schema.categories, eq(schema.products.category_id, schema.categories.id))
-    .where(eq(schema.products.user_id, userId))
+    .where(getHouseholdProductAccessCondition(userId, household?.id))
     .orderBy(asc(schema.products.expiration_date), asc(schema.products.name))
     .limit(200);
 
@@ -968,7 +980,7 @@ export async function getMealPlanningPageData(
   const household = await getPrimaryHouseholdForUser(userId);
 
   const [inventory, recipes, shopping, savedPlan] = await Promise.all([
-    getMealPlanningInventory(userId),
+    getMealPlanningInventory(userId, household),
     getMealPlanningRecipes(userId, household),
     getShoppingSnapshot(household),
     getActiveSavedMealPlan(household),
@@ -1148,7 +1160,7 @@ export async function markMealPlanItemCookedForUser(userId: string, householdId:
           unit: schema.products.unit,
         })
         .from(schema.products)
-        .where(and(eq(schema.products.id, suggestion.productId), eq(schema.products.user_id, userId)))
+        .where(and(eq(schema.products.id, suggestion.productId), getHouseholdProductAccessCondition(userId, householdId)))
         .limit(1);
 
       const product = productRows[0];
@@ -1169,7 +1181,7 @@ export async function markMealPlanItemCookedForUser(userId: string, householdId:
           quantity: formatDecimal(nextQuantity),
           updated_at: new Date(),
         })
-        .where(and(eq(schema.products.id, product.id), eq(schema.products.user_id, userId)));
+        .where(and(eq(schema.products.id, product.id), getHouseholdProductAccessCondition(userId, householdId)));
 
       await tx.insert(schema.meal_plan_inventory_usages).values({
         meal_plan_item_id: itemId,
@@ -1262,7 +1274,7 @@ export async function reopenMealPlanItemForUser(userId: string, householdId: str
             unit: schema.products.unit,
           })
           .from(schema.products)
-          .where(and(eq(schema.products.id, usage.productId), eq(schema.products.user_id, userId)))
+          .where(and(eq(schema.products.id, usage.productId), getHouseholdProductAccessCondition(userId, householdId)))
           .limit(1);
 
         const product = productRows[0];
@@ -1278,7 +1290,7 @@ export async function reopenMealPlanItemForUser(userId: string, householdId: str
             quantity: formatDecimal(currentQuantity + restoreQuantity),
             updated_at: new Date(),
           })
-          .where(and(eq(schema.products.id, product.id), eq(schema.products.user_id, userId)));
+          .where(and(eq(schema.products.id, product.id), getHouseholdProductAccessCondition(userId, householdId)));
 
         restoredCount += 1;
       }

@@ -137,6 +137,13 @@ function getNotificationCondition(userId: string, household: UserHousehold | nul
   );
 }
 
+function getHouseholdProductAccessCondition(userId: string, householdId: string) {
+  return or(
+    eq(schema.products.household_id, householdId),
+    and(isNull(schema.products.household_id), eq(schema.products.user_id, userId))
+  )!;
+}
+
 async function getHouseholdSettings(householdId: string): Promise<HouseholdSettingsRecord> {
   const rows = await db
     .select({ settings: schema.households.settings })
@@ -356,7 +363,7 @@ export async function runNotificationChecksForUser(userId: string): Promise<Noti
       .from(schema.products)
       .where(
         and(
-          eq(schema.products.user_id, userId),
+          getHouseholdProductAccessCondition(userId, household.id),
           gte(schema.products.expiration_date, today),
           lt(schema.products.expiration_date, tomorrow)
         )
@@ -393,7 +400,7 @@ export async function runNotificationChecksForUser(userId: string): Promise<Noti
       .from(schema.products)
       .where(
         and(
-          eq(schema.products.user_id, userId),
+          getHouseholdProductAccessCondition(userId, household.id),
           gte(schema.products.expiration_date, tomorrow),
           lt(schema.products.expiration_date, addDays(expirationEnd, 1))
         )
@@ -511,7 +518,7 @@ export async function runNotificationChecksForUser(userId: string): Promise<Noti
         .from(schema.products)
         .where(
           and(
-            eq(schema.products.user_id, userId),
+            getHouseholdProductAccessCondition(userId, household.id),
             gte(schema.products.expiration_date, today),
             lt(schema.products.expiration_date, addDays(today, settings.expirationWindowDays + 1))
           )
@@ -521,7 +528,7 @@ export async function runNotificationChecksForUser(userId: string): Promise<Noti
         .from(schema.products)
         .where(
           and(
-            eq(schema.products.user_id, userId),
+            getHouseholdProductAccessCondition(userId, household.id),
             gte(schema.products.expiration_date, today),
             lt(schema.products.expiration_date, tomorrow)
           )
