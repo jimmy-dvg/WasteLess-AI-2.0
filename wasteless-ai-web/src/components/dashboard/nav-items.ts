@@ -25,6 +25,11 @@ export const dashboardNavItems = [
     marker: "S",
   },
   {
+    label: "Meal Plan",
+    href: "/dashboard/meal-plan",
+    marker: "M",
+  },
+  {
     label: "Recipes",
     href: "/dashboard/recipes",
     marker: "R",
