@@ -2,7 +2,11 @@
 
 import { useState } from "react";
 import MobileSidebar from "./MobileSidebar";
+import NotificationBellDropdown, {
+  type NotificationDropdownData,
+} from "./NotificationBellDropdown";
 import UserDropdown from "./UserDropdown";
+import type { NotificationSettings } from "@/features/notifications/constants";
 
 type DashboardHeaderProps = {
   user: {
@@ -10,9 +14,15 @@ type DashboardHeaderProps = {
     name: string;
     email: string;
   };
+  notifications: NotificationDropdownData;
+  notificationSettings: NotificationSettings;
 };
 
-export default function DashboardHeader({ user }: DashboardHeaderProps) {
+export default function DashboardHeader({
+  user,
+  notifications,
+  notificationSettings,
+}: DashboardHeaderProps) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   return (
@@ -46,14 +56,7 @@ export default function DashboardHeader({ user }: DashboardHeaderProps) {
           </form>
 
           <div className="ml-auto flex items-center gap-2">
-            <button
-              type="button"
-              aria-label="Notifications"
-              className="relative h-10 w-10 rounded-lg border border-slate-200 bg-white text-sm font-semibold text-slate-600 hover:bg-slate-50"
-            >
-              N
-              <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-emerald-500" />
-            </button>
+            <NotificationBellDropdown data={notifications} settings={notificationSettings} />
             <UserDropdown user={user} />
           </div>
         </div>

@@ -1,10 +1,51 @@
 import Link from "next/link";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
+import type { NotificationDropdownData } from "@/components/dashboard/NotificationBellDropdown";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
+import { DEFAULT_NOTIFICATION_SETTINGS } from "@/features/notifications/constants";
+import {
+  getNotificationCenterData,
+  getNotificationSettingsForUser,
+} from "@/features/notifications/services/notification.service";
 import { requireUser } from "@/lib/auth";
+import { formatDate } from "@/lib/dashboard-utils";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const user = await requireUser();
+  let notifications: NotificationDropdownData = {
+    unreadCount: 0,
+    items: [],
+  };
+  let notificationSettings = DEFAULT_NOTIFICATION_SETTINGS;
+
+  try {
+    const [notificationData, settingsData] = await Promise.all([
+      getNotificationCenterData(user.id),
+      getNotificationSettingsForUser(user.id),
+    ]);
+
+    notifications = {
+      unreadCount: notificationData.unreadCount,
+      items: notificationData.items.slice(0, 8).map((item) => ({
+        id: item.id,
+        typeLabel: item.typeLabel,
+        status: item.status,
+        title: item.title,
+        body: item.body,
+        href: item.href,
+        actionLabel: item.actionLabel,
+        severity: item.severity,
+        createdAtLabel: formatDate(item.createdAt),
+      })),
+    };
+    notificationSettings = settingsData.settings;
+  } catch {
+    notifications = {
+      unreadCount: 0,
+      items: [],
+    };
+    notificationSettings = DEFAULT_NOTIFICATION_SETTINGS;
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
@@ -24,7 +65,11 @@ export default async function DashboardLayout({ children }: { children: React.Re
         </div>
       </aside>
       <div className="lg:pl-72">
-        <DashboardHeader user={user} />
+        <DashboardHeader
+          user={user}
+          notifications={notifications}
+          notificationSettings={notificationSettings}
+        />
         <main className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">{children}</main>
       </div>
     </div>
