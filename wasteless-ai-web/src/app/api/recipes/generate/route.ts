@@ -60,6 +60,8 @@ export async function POST(request: Request) {
           userId: user.id,
           maxRecipes: payload.maxRecipes,
           includeExpired: payload.includeExpired,
+          inventoryOnly: payload.inventoryOnly,
+          excludedRecipeTitles: payload.excludedRecipeTitles,
           preferencesOverride: payload.preferencesOverride,
           streamTokens: true,
           onToken: (token) => send("token", { token }),
@@ -90,6 +92,8 @@ export async function POST(request: Request) {
       userId: user.id,
       maxRecipes: payload.maxRecipes,
       includeExpired: payload.includeExpired,
+      inventoryOnly: payload.inventoryOnly,
+      excludedRecipeTitles: payload.excludedRecipeTitles,
       preferencesOverride: payload.preferencesOverride,
     });
 

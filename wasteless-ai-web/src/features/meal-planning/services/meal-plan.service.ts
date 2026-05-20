@@ -126,6 +126,10 @@ export type ShoppingOptimizerItem = {
 export type MealPlanningData = {
   household: UserHousehold | null;
   savedPlan: SavedMealPlan | null;
+  controls: {
+    inventoryOnly: boolean;
+    excludedMealTitles: string[];
+  };
   planDays: MealPlanDay[];
   shoppingSuggestions: ShoppingOptimizerItem[];
   expiringItems: MealPlanInventoryItem[];
@@ -633,9 +637,11 @@ async function getScannerSignals(userId: string, inventory: MealPlanInventoryIte
 
 function buildRecipeCandidates(
   recipes: Awaited<ReturnType<typeof getMealPlanningRecipes>>,
-  usableInventory: MealPlanInventoryItem[]
+  usableInventory: MealPlanInventoryItem[],
+  options: { inventoryOnly: boolean; excludedMealTitles: string[] }
 ): RecipeCandidate[] {
   const inventorySnapshot = getInventorySnapshot(usableInventory);
+  const excludedTitles = new Set(options.excludedMealTitles.map(normalizeName));
 
   return recipes
     .filter((recipe) => recipe.ingredients.length > 0)
@@ -678,13 +684,16 @@ function buildRecipeCandidates(
         tags: recipe.tags,
       };
     })
+    .filter((candidate) => !excludedTitles.has(normalizeName(candidate.title)))
+    .filter((candidate) => (options.inventoryOnly ? candidate.missingItems.length === 0 : true))
     .sort((a, b) => b.score - a.score);
 }
 
 function buildFallbackCandidate(
   primary: MealPlanInventoryItem,
   index: number,
-  usableInventory: MealPlanInventoryItem[]
+  usableInventory: MealPlanInventoryItem[],
+  inventoryOnly: boolean
 ): RecipeCandidate {
   const templates = [
     {
@@ -708,7 +717,13 @@ function buildFallbackCandidate(
   ];
 
   const template = templates[index % templates.length];
-  const ingredientNames = [primary.name, ...template.support];
+  const inventorySupport = usableInventory
+    .filter((item) => item.id !== primary.id && item.expirationStatus !== "expired")
+    .slice(0, 3)
+    .map((item) => item.name);
+  const ingredientNames = inventoryOnly
+    ? [primary.name, ...inventorySupport]
+    : [primary.name, ...template.support];
   const ingredients = ingredientNames.map((name) => ({ name }));
   const computed = computeMissingIngredients(ingredients, getInventorySnapshot(usableInventory));
 
@@ -731,7 +746,8 @@ function buildFallbackCandidate(
 function buildPlanDays(
   recipes: Awaited<ReturnType<typeof getMealPlanningRecipes>>,
   inventory: MealPlanInventoryItem[],
-  days: number
+  days: number,
+  options: { inventoryOnly: boolean; excludedMealTitles: string[] }
 ): MealPlanDay[] {
   const usableInventory = inventory.filter((item) => item.expirationStatus !== "expired");
   const expiringItems = usableInventory
@@ -741,11 +757,19 @@ function buildPlanDays(
     (item, index, list) => list.findIndex((candidate) => candidate.id === item.id) === index
   );
 
-  const candidates = buildRecipeCandidates(recipes, usableInventory);
+  const candidates = buildRecipeCandidates(recipes, usableInventory, options);
   let fallbackIndex = 0;
 
   while (candidates.length < days && fallbackIndex < fallbackItems.length) {
-    candidates.push(buildFallbackCandidate(fallbackItems[fallbackIndex], fallbackIndex, usableInventory));
+    const fallback = buildFallbackCandidate(
+      fallbackItems[fallbackIndex],
+      fallbackIndex,
+      usableInventory,
+      options.inventoryOnly
+    );
+    if (!options.excludedMealTitles.map(normalizeName).includes(normalizeName(fallback.title))) {
+      candidates.push(fallback);
+    }
     fallbackIndex += 1;
   }
 
@@ -936,9 +960,11 @@ async function getActiveSavedMealPlan(household: UserHousehold | null): Promise<
 
 export async function getMealPlanningPageData(
   userId: string,
-  options: { days?: number } = {}
+  options: { days?: number; inventoryOnly?: boolean; excludedMealTitles?: string[] } = {}
 ): Promise<MealPlanningData> {
   const days = clampPlanDays(options.days);
+  const inventoryOnly = Boolean(options.inventoryOnly);
+  const excludedMealTitles = options.excludedMealTitles ?? [];
   const household = await getPrimaryHouseholdForUser(userId);
 
   const [inventory, recipes, shopping, savedPlan] = await Promise.all([
@@ -949,7 +975,7 @@ export async function getMealPlanningPageData(
   ]);
   const scanner = await getScannerSignals(userId, inventory);
 
-  const planDays = buildPlanDays(recipes, inventory, days);
+  const planDays = buildPlanDays(recipes, inventory, days, { inventoryOnly, excludedMealTitles });
   const shoppingSuggestions = buildShoppingSuggestions(planDays, shopping.items);
   const expiringItems = inventory
     .filter((item) => item.expirationStatus === "expiring")
@@ -968,6 +994,10 @@ export async function getMealPlanningPageData(
   return {
     household,
     savedPlan,
+    controls: {
+      inventoryOnly,
+      excludedMealTitles,
+    },
     planDays,
     shoppingSuggestions,
     expiringItems,
@@ -994,7 +1024,7 @@ export async function getMealPlanningPageData(
 export async function saveCurrentMealPlanForUser(
   userId: string,
   householdId: string,
-  options: { days?: number } = {}
+  options: { days?: number; inventoryOnly?: boolean; excludedMealTitles?: string[] } = {}
 ) {
   const data = await getMealPlanningPageData(userId, options);
   if (data.planDays.length === 0) {
@@ -1196,4 +1226,82 @@ export async function skipMealPlanItemForHousehold(householdId: string, itemId: 
   return {
     title: existing.title,
   };
+}
+
+export async function reopenMealPlanItemForUser(userId: string, householdId: string, itemId: string) {
+  const existing = await getMealPlanItemForHousehold(itemId, householdId);
+  if (!existing) throw new Error("Meal plan item was not found");
+
+  if (existing.status === "planned") {
+    return {
+      title: existing.title,
+      restoredCount: 0,
+      alreadyPlanned: true,
+    };
+  }
+
+  return db.transaction(async (tx) => {
+    let restoredCount = 0;
+
+    if (existing.status === "cooked") {
+      const usages = await tx
+        .select({
+          id: schema.meal_plan_inventory_usages.id,
+          productId: schema.meal_plan_inventory_usages.product_id,
+          quantity: schema.meal_plan_inventory_usages.quantity,
+          unit: schema.meal_plan_inventory_usages.unit,
+        })
+        .from(schema.meal_plan_inventory_usages)
+        .where(eq(schema.meal_plan_inventory_usages.meal_plan_item_id, itemId));
+
+      for (const usage of usages) {
+        const productRows = await tx
+          .select({
+            id: schema.products.id,
+            quantity: schema.products.quantity,
+            unit: schema.products.unit,
+          })
+          .from(schema.products)
+          .where(and(eq(schema.products.id, usage.productId), eq(schema.products.user_id, userId)))
+          .limit(1);
+
+        const product = productRows[0];
+        if (!product || !unitsAreCompatible(product.unit, usage.unit ?? undefined)) continue;
+
+        const currentQuantity = toNumber(product.quantity);
+        const restoreQuantity = toNumber(usage.quantity);
+        if (restoreQuantity <= 0) continue;
+
+        await tx
+          .update(schema.products)
+          .set({
+            quantity: formatDecimal(currentQuantity + restoreQuantity),
+            updated_at: new Date(),
+          })
+          .where(and(eq(schema.products.id, product.id), eq(schema.products.user_id, userId)));
+
+        restoredCount += 1;
+      }
+
+      await tx
+        .delete(schema.meal_plan_inventory_usages)
+        .where(eq(schema.meal_plan_inventory_usages.meal_plan_item_id, itemId));
+    }
+
+    await tx
+      .update(schema.meal_plan_items)
+      .set({
+        status: "planned",
+        cooked_at: null,
+        skipped_at: null,
+        updated_at: new Date(),
+      })
+      .where(eq(schema.meal_plan_items.id, itemId));
+
+    return {
+      title: existing.title,
+      restoredCount,
+      alreadyPlanned: false,
+    };
+  });
 }

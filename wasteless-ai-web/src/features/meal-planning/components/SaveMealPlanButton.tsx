@@ -27,7 +27,15 @@ function SubmitButton({ disabled }: { disabled: boolean }) {
   );
 }
 
-export default function SaveMealPlanButton({ days, disabled }: { days: number; disabled: boolean }) {
+export default function SaveMealPlanButton({
+  days,
+  disabled,
+  inventoryOnly = false,
+}: {
+  days: number;
+  disabled: boolean;
+  inventoryOnly?: boolean;
+}) {
   const [state, formAction] = useActionState(saveCurrentMealPlanAction, initialState);
   const { addToast } = useToast();
 
@@ -39,6 +47,7 @@ export default function SaveMealPlanButton({ days, disabled }: { days: number; d
   return (
     <form action={formAction}>
       <input type="hidden" name="days" value={days} />
+      <input type="hidden" name="inventoryOnly" value={inventoryOnly ? "true" : "false"} />
       <SubmitButton disabled={disabled} />
     </form>
   );

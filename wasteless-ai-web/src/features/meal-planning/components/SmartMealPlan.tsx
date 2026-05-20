@@ -32,6 +32,19 @@ function formatSource(source: string) {
   return source.replace(/_/g, " ");
 }
 
+function buildMealPlanUrl(data: MealPlanningData, nextExcludedTitle?: string) {
+  const params = new URLSearchParams();
+  if (data.controls.inventoryOnly) params.set("inventoryOnly", "1");
+
+  const excludedTitles = nextExcludedTitle
+    ? [...data.controls.excludedMealTitles, nextExcludedTitle]
+    : data.controls.excludedMealTitles;
+
+  excludedTitles.forEach((title) => params.append("exclude", title));
+  const query = params.toString();
+  return query ? `/dashboard/meal-plan?${query}` : "/dashboard/meal-plan";
+}
+
 function SavedPlanPanel({ data }: { data: MealPlanningData }) {
   const savedPlan = data.savedPlan;
   if (!savedPlan) return null;
@@ -189,6 +202,11 @@ export default function SmartMealPlan({ data }: SmartMealPlanProps) {
                     {day.inventoryCoverage}% inventory
                   </span>
                   <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-700">{day.score} score</span>
+                  {data.controls.inventoryOnly ? (
+                    <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-emerald-700">
+                      no shopping
+                    </span>
+                  ) : null}
                 </div>
               </div>
 
@@ -218,7 +236,9 @@ export default function SmartMealPlan({ data }: SmartMealPlanProps) {
                   )}
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold text-slate-950">Missing</h3>
+                  <h3 className="text-sm font-semibold text-slate-950">
+                    {day.missingItems.length > 0 ? "Missing" : "Shopping"}
+                  </h3>
                   {day.missingItems.length > 0 ? (
                     <ul className="mt-2 space-y-1 text-sm text-slate-600">
                       {day.missingItems.slice(0, 4).map((item) => (
@@ -228,9 +248,27 @@ export default function SmartMealPlan({ data }: SmartMealPlanProps) {
                       ))}
                     </ul>
                   ) : (
-                    <p className="mt-2 text-sm text-emerald-700">Covered by current inventory.</p>
+                    <p className="mt-2 text-sm text-emerald-700">
+                      {data.controls.inventoryOnly ? "No shopping needed." : "Covered by current inventory."}
+                    </p>
                   )}
                 </div>
+              </div>
+              <div className="mt-5 flex flex-wrap gap-2">
+                <Link
+                  href={buildMealPlanUrl(data, day.title)}
+                  className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                >
+                  Try another
+                </Link>
+                {day.recipeId ? (
+                  <Link
+                    href={`/dashboard/recipes/${day.recipeId}`}
+                    className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700"
+                  >
+                    View recipe
+                  </Link>
+                ) : null}
               </div>
             </article>
           ))}
@@ -242,8 +280,17 @@ export default function SmartMealPlan({ data }: SmartMealPlanProps) {
             <p className="mt-1 text-sm leading-6 text-slate-500">
               Save this recommendation to track cooked meals and update inventory as meals happen.
             </p>
+            {data.controls.inventoryOnly ? (
+              <div className="mt-3 rounded-lg border border-emerald-100 bg-emerald-50 p-3 text-sm text-emerald-800">
+                This plan is using only current inventory and pantry staples.
+              </div>
+            ) : null}
             <div className="mt-4">
-              <SaveMealPlanButton days={Math.max(data.planDays.length, 1)} disabled={data.planDays.length === 0} />
+              <SaveMealPlanButton
+                days={Math.max(data.planDays.length, 1)}
+                disabled={data.planDays.length === 0}
+                inventoryOnly={data.controls.inventoryOnly}
+              />
             </div>
           </section>
 
@@ -266,6 +313,7 @@ export default function SmartMealPlan({ data }: SmartMealPlanProps) {
               <AddOptimizedShoppingButton
                 days={Math.max(data.planDays.length, 1)}
                 disabled={data.stats.addableShoppingItems === 0}
+                inventoryOnly={data.controls.inventoryOnly}
               />
             </div>
 

@@ -7,12 +7,30 @@ import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
-export default async function MealPlanPage() {
+type MealPlanPageProps = {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+};
+
+function getParam(params: Record<string, string | string[] | undefined>, key: string) {
+  const value = params[key];
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function getParamList(params: Record<string, string | string[] | undefined>, key: string) {
+  const value = params[key];
+  if (!value) return [];
+  return Array.isArray(value) ? value.filter(Boolean) : [value].filter(Boolean);
+}
+
+export default async function MealPlanPage({ searchParams }: MealPlanPageProps) {
   const user = await requireUser();
+  const params = searchParams ? await searchParams : {};
+  const inventoryOnly = getParam(params, "inventoryOnly") === "1";
+  const excludedMealTitles = getParamList(params, "exclude");
   let data;
 
   try {
-    data = await getMealPlanningPageData(user.id);
+    data = await getMealPlanningPageData(user.id, { inventoryOnly, excludedMealTitles });
   } catch {
     return <ErrorState title="Meal planning data is unavailable" />;
   }
@@ -25,16 +43,16 @@ export default async function MealPlanPage() {
         action={
           <div className="flex flex-wrap gap-3">
             <Link
-              href="/dashboard/recipes"
+              href={inventoryOnly ? "/dashboard/meal-plan" : "/dashboard/meal-plan?inventoryOnly=1"}
               className="inline-flex rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
             >
-              Recipes
+              {inventoryOnly ? "Allow shopping items" : "Only current inventory"}
             </Link>
             <Link
-              href="/dashboard/shopping"
+              href="/dashboard/recipes"
               className="inline-flex rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700"
             >
-              Shopping list
+              Recipes
             </Link>
           </div>
         }

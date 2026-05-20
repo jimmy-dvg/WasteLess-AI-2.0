@@ -5,6 +5,7 @@ import { requireUser } from "@/lib/auth";
 import {
   getMealPlanningPageData,
   markMealPlanItemCookedForUser,
+  reopenMealPlanItemForUser,
   saveCurrentMealPlanForUser,
   skipMealPlanItemForHousehold,
 } from "@/features/meal-planning/services/meal-plan.service";
@@ -20,6 +21,7 @@ export type MealPlanActionState = {
 
 const optimizerSchema = z.object({
   days: z.coerce.number().int().min(1).max(7).default(5),
+  inventoryOnly: z.coerce.boolean().optional().default(false),
 });
 
 const mealPlanItemSchema = z.object({
@@ -48,7 +50,10 @@ export async function addOptimizedShoppingItemsAction(
 
   const user = await requireUser();
   const household = await ensurePersonalHouseholdForUser(user);
-  const data = await getMealPlanningPageData(user.id, { days: parsed.data.days });
+  const data = await getMealPlanningPageData(user.id, {
+    days: parsed.data.days,
+    inventoryOnly: parsed.data.inventoryOnly,
+  });
   const addableItems = data.shoppingSuggestions
     .filter((item) => !item.alreadyOnList)
     .map((item) => ({
@@ -99,7 +104,10 @@ export async function saveCurrentMealPlanAction(
   try {
     const user = await requireUser();
     const household = await ensurePersonalHouseholdForUser(user);
-    const saved = await saveCurrentMealPlanForUser(user.id, household.id, { days: parsed.data.days });
+    const saved = await saveCurrentMealPlanForUser(user.id, household.id, {
+      days: parsed.data.days,
+      inventoryOnly: parsed.data.inventoryOnly,
+    });
 
     revalidateMealPlanPaths();
 
@@ -185,6 +193,48 @@ export async function skipMealPlanItemAction(
     return {
       success: false,
       error: error instanceof Error ? error.message : "Unable to skip meal",
+    };
+  }
+}
+
+export async function reopenMealPlanItemAction(
+  _prevState: MealPlanActionState,
+  formData: FormData
+): Promise<MealPlanActionState> {
+  const parsed = mealPlanItemSchema.safeParse(Object.fromEntries(formData.entries()));
+
+  if (!parsed.success) {
+    return {
+      success: false,
+      error: parsed.error.issues[0]?.message ?? "Invalid meal selection",
+    };
+  }
+
+  try {
+    const user = await requireUser();
+    const household = await ensurePersonalHouseholdForUser(user);
+    const result = await reopenMealPlanItemForUser(user.id, household.id, parsed.data.itemId);
+
+    revalidateMealPlanPaths();
+
+    if (result.alreadyPlanned) {
+      return {
+        success: true,
+        message: `${result.title} is already planned.`,
+      };
+    }
+
+    return {
+      success: true,
+      message:
+        result.restoredCount > 0
+          ? `${result.title} reopened. ${result.restoredCount} inventory item${result.restoredCount === 1 ? "" : "s"} restored.`
+          : `${result.title} reopened.`,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unable to reopen meal",
     };
   }
 }

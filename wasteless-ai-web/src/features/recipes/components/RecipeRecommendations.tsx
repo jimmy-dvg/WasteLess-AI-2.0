@@ -52,6 +52,8 @@ export default function RecipeRecommendations({ initialRecipes, preferences, aiS
   const [isGenerating, setIsGenerating] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [includeExpired, setIncludeExpired] = useState(false);
+  const [inventoryOnly, setInventoryOnly] = useState(false);
+  const [regeneratingRecipeId, setRegeneratingRecipeId] = useState<string | null>(null);
   const [summary, setSummary] = useState<string | null>(null);
   const [pantryStaples, setPantryStaples] = useState<string[]>([]);
   const [streamPreview, setStreamPreview] = useState<string>("");
@@ -59,7 +61,7 @@ export default function RecipeRecommendations({ initialRecipes, preferences, aiS
 
   const handleGenerate = async () => {
     setIsGenerating(true);
-    setStatusMessage("Starting recommendations...");
+    setStatusMessage(inventoryOnly ? "Finding recipes from current inventory..." : "Starting recommendations...");
     setSummary(null);
     setPantryStaples([]);
     setStreamPreview("");
@@ -68,7 +70,7 @@ export default function RecipeRecommendations({ initialRecipes, preferences, aiS
       const response = await fetch(`/api/recipes/generate?stream=${aiSettings.enableStreaming ? "1" : "0"}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ maxRecipes: 3, includeExpired }),
+        body: JSON.stringify({ maxRecipes: 3, includeExpired, inventoryOnly }),
       });
 
       if (response.headers.get("content-type")?.includes("text/event-stream")) {
@@ -142,6 +144,45 @@ export default function RecipeRecommendations({ initialRecipes, preferences, aiS
     }
   };
 
+  const handleRegenerateRecipe = async (recipe: Pick<RecipeListItem, "id" | "title">) => {
+    setRegeneratingRecipeId(recipe.id);
+    setStatusMessage(`Trying another option instead of ${recipe.title}...`);
+
+    try {
+      const excludedRecipeTitles = Array.from(new Set([recipe.title, ...recipes.map((item) => item.title)]));
+      const response = await fetch("/api/recipes/generate?stream=0", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          maxRecipes: 1,
+          includeExpired,
+          inventoryOnly,
+          excludedRecipeTitles,
+        }),
+      });
+
+      const payload = (await response.json()) as RecipeGenerationResponse & { error?: string };
+      if (!response.ok) {
+        throw new Error(payload.error || "Unable to generate another recipe");
+      }
+
+      const replacement = payload.recipes?.[0];
+      if (!replacement) {
+        throw new Error("No replacement recipe was generated");
+      }
+
+      setRecipes((current) => current.map((item) => (item.id === recipe.id ? replacement : item)));
+      setSummary(payload.summary ?? null);
+      setPantryStaples(payload.pantryStaples ?? []);
+      addToast(payload.cached ? "Loaded a cached alternative." : "New alternative ready.", "success");
+    } catch (error) {
+      addToast(error instanceof Error ? error.message : "Unable to generate another recipe", "error");
+    } finally {
+      setRegeneratingRecipeId(null);
+      setStatusMessage(null);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -160,6 +201,15 @@ export default function RecipeRecommendations({ initialRecipes, preferences, aiS
                 className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-200"
               />
               Include expired items
+            </label>
+            <label className="flex items-center gap-2 text-xs font-semibold text-slate-600">
+              <input
+                type="checkbox"
+                checked={inventoryOnly}
+                onChange={(event) => setInventoryOnly(event.target.checked)}
+                className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-200"
+              />
+              Only current inventory
             </label>
             <button
               type="button"
@@ -224,7 +274,12 @@ export default function RecipeRecommendations({ initialRecipes, preferences, aiS
           {recipes.length > 0 ? (
             <section className="grid gap-4 md:grid-cols-2">
               {recipes.map((recipe) => (
-                <RecipeCard key={recipe.id} recipe={recipe} />
+                <RecipeCard
+                  key={recipe.id}
+                  recipe={recipe}
+                  isRegenerating={regeneratingRecipeId === recipe.id}
+                  onRegenerate={handleRegenerateRecipe}
+                />
               ))}
             </section>
           ) : null}

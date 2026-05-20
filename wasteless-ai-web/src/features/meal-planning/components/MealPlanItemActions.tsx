@@ -1,11 +1,12 @@
 "use client";
 
-import { Check, SkipForward } from "lucide-react";
+import { Check, RotateCcw, SkipForward } from "lucide-react";
 import { useActionState, useEffect } from "react";
 import { useFormStatus } from "react-dom";
 import { useToast } from "@/components/ui/Toast";
 import {
   markMealPlanItemCookedAction,
+  reopenMealPlanItemAction,
   skipMealPlanItemAction,
   type MealPlanActionState,
 } from "@/features/meal-planning/actions";
@@ -46,6 +47,21 @@ function SkipButton({ disabled }: { disabled: boolean }) {
   );
 }
 
+function ReopenButton() {
+  const { pending } = useFormStatus();
+
+  return (
+    <button
+      type="submit"
+      disabled={pending}
+      className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+    >
+      <RotateCcw className="h-4 w-4" aria-hidden="true" />
+      {pending ? "Reopening..." : "Reopen"}
+    </button>
+  );
+}
+
 export default function MealPlanItemActions({
   itemId,
   status,
@@ -55,6 +71,7 @@ export default function MealPlanItemActions({
 }) {
   const [cookState, cookAction] = useActionState(markMealPlanItemCookedAction, initialState);
   const [skipState, skipAction] = useActionState(skipMealPlanItemAction, initialState);
+  const [reopenState, reopenAction] = useActionState(reopenMealPlanItemAction, initialState);
   const { addToast } = useToast();
   const isDone = status === "cooked" || status === "skipped";
 
@@ -68,15 +85,29 @@ export default function MealPlanItemActions({
     if (skipState.message) addToast(skipState.message, skipState.success ? "success" : "info");
   }, [skipState, addToast]);
 
+  useEffect(() => {
+    if (reopenState.error) addToast(reopenState.error, "error");
+    if (reopenState.message) addToast(reopenState.message, reopenState.success ? "success" : "info");
+  }, [reopenState, addToast]);
+
+  if (isDone) {
+    return (
+      <form action={reopenAction}>
+        <input type="hidden" name="itemId" value={itemId} />
+        <ReopenButton />
+      </form>
+    );
+  }
+
   return (
     <div className="flex flex-wrap gap-2">
       <form action={cookAction}>
         <input type="hidden" name="itemId" value={itemId} />
-        <CookButton disabled={isDone} />
+        <CookButton disabled={false} />
       </form>
       <form action={skipAction}>
         <input type="hidden" name="itemId" value={itemId} />
-        <SkipButton disabled={isDone} />
+        <SkipButton disabled={false} />
       </form>
     </div>
   );

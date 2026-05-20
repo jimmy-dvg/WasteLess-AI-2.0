@@ -19,6 +19,33 @@ import { and, eq, inArray } from "drizzle-orm";
 const DEFAULT_PREFERENCES = recipePreferencesSchema.parse({});
 const CACHE_TTL_MS = 5 * 60 * 1000;
 const MAX_INVENTORY_PROMPT_ITEMS = 60;
+const PANTRY_STAPLES = new Set([
+  "salt",
+  "pepper",
+  "black pepper",
+  "water",
+  "olive oil",
+  "oil",
+  "butter",
+  "flour",
+  "sugar",
+  "vinegar",
+  "soy sauce",
+  "spices",
+  "herbs",
+]);
+
+function normalizeName(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function isPantryStaple(name: string) {
+  return PANTRY_STAPLES.has(normalizeName(name));
+}
 
 function normalizePreferences(raw: unknown): RecipePreferences {
   const parsed = recipePreferencesSchema.safeParse(raw ?? {});
@@ -69,6 +96,7 @@ function toIngredient(input: {
 function mergeMissingIngredients(base: RecipeIngredient[], extra: RecipeIngredient[]) {
   const map = new Map<string, RecipeIngredient>();
   const push = (item: RecipeIngredient) => {
+    if (isPantryStaple(item.name)) return;
     const key = item.name.trim().toLowerCase();
     if (!map.has(key)) map.set(key, item);
   };
@@ -231,6 +259,8 @@ export async function generateRecipesForUser(options: {
   userId: string;
   maxRecipes: number;
   includeExpired: boolean;
+  inventoryOnly?: boolean;
+  excludedRecipeTitles?: string[];
   preferencesOverride?: Partial<RecipePreferences> | undefined;
   streamTokens?: boolean;
   onToken?: (token: string) => void;
@@ -241,6 +271,9 @@ export async function generateRecipesForUser(options: {
   const preferences = mergePreferences(storedPreferences, options.preferencesOverride);
   const household = user ? await ensurePersonalHouseholdForUser(user) : null;
   const aiSettings = await getAiSettingsForUser(options.userId);
+  const inventoryOnly = Boolean(options.inventoryOnly);
+  const excludedRecipeTitles = options.excludedRecipeTitles ?? [];
+  const excludedTitleSet = new Set(excludedRecipeTitles.map(normalizeName));
 
   const inventory = await getInventorySnapshot(options.userId);
   const filteredInventory = options.includeExpired
@@ -258,6 +291,8 @@ export async function generateRecipesForUser(options: {
     expiringItems,
     preferences,
     includeExpired: options.includeExpired,
+    inventoryOnly,
+    excludedRecipeTitles,
   });
 
   const cacheKey = hashJson({ userId: options.userId, payload: promptPayload, ai: aiSettings });
@@ -329,7 +364,19 @@ export async function generateRecipesForUser(options: {
       ...enrichedRecipe,
       score,
     };
+  }).filter((recipe) => {
+    if (excludedTitleSet.has(normalizeName(recipe.title))) return false;
+    if (!inventoryOnly) return true;
+    return recipe.missingIngredients.length === 0;
   });
+
+  if (normalized.length === 0) {
+    throw new Error(
+      inventoryOnly
+        ? "No inventory-only recipes could be generated from the current pantry. Add more items or turn off inventory-only mode."
+        : "No new recipe alternatives could be generated right now."
+    );
+  }
 
   const generationId = await logAiGeneration({
     userId: options.userId,

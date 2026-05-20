@@ -14,6 +14,8 @@ export const recipePreferencesSchema = z.object({
 export const recipeGenerationRequestSchema = z.object({
   maxRecipes: z.number().int().min(1).max(6).optional().default(3),
   includeExpired: z.boolean().optional().default(false),
+  inventoryOnly: z.boolean().optional().default(false),
+  excludedRecipeTitles: z.array(z.string().trim().min(3).max(120)).max(12).optional().default([]),
   preferencesOverride: recipePreferencesSchema.partial().optional(),
 });
 

@@ -1,32 +1,36 @@
 import SaveRecipeButton from "./SaveRecipeButton";
 
-type RecipeCardProps = {
-  recipe: {
-    id: string;
-    title: string;
-    description: string;
-    servings: number;
-    cookTime: number;
-    ingredients: {
-      name: string;
-      quantity?: string;
-      unit?: string;
-      isExpiring?: boolean;
-    }[];
-    missingIngredients: {
-      name: string;
-      quantity?: string;
-      unit?: string;
-    }[];
-    tags: string[];
-    source: string;
-    difficulty: string;
-    isSaved: boolean;
-    score: number | null;
-  };
+type RecipeCardRecipe = {
+  id: string;
+  title: string;
+  description: string;
+  servings: number;
+  cookTime: number;
+  ingredients: {
+    name: string;
+    quantity?: string;
+    unit?: string;
+    isExpiring?: boolean;
+  }[];
+  missingIngredients: {
+    name: string;
+    quantity?: string;
+    unit?: string;
+  }[];
+  tags: string[];
+  source: string;
+  difficulty: string;
+  isSaved: boolean;
+  score: number | null;
 };
 
-export default function RecipeCard({ recipe }: RecipeCardProps) {
+type RecipeCardProps = {
+  recipe: RecipeCardRecipe;
+  isRegenerating?: boolean;
+  onRegenerate?: (recipe: Pick<RecipeCardRecipe, "id" | "title">) => void;
+};
+
+export default function RecipeCard({ recipe, isRegenerating = false, onRegenerate }: RecipeCardProps) {
   const expiringCount = recipe.ingredients.filter((ingredient) => ingredient.isExpiring).length;
   const missingPreview = recipe.missingIngredients.slice(0, 3);
 
@@ -106,13 +110,23 @@ export default function RecipeCard({ recipe }: RecipeCardProps) {
         </div>
       ) : null}
 
-      <div className="mt-auto flex gap-2 pt-5">
+      <div className="mt-auto flex flex-wrap gap-2 pt-5">
         <a
           href={`/dashboard/recipes/${recipe.id}`}
           className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700"
         >
           View recipe
         </a>
+        {onRegenerate ? (
+          <button
+            type="button"
+            onClick={() => onRegenerate(recipe)}
+            disabled={isRegenerating}
+            className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isRegenerating ? "Trying..." : "Try another"}
+          </button>
+        ) : null}
         <SaveRecipeButton recipeId={recipe.id} initialSaved={recipe.isSaved} />
       </div>
     </article>

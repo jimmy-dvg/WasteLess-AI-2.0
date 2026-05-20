@@ -6,6 +6,8 @@ export type RecipePromptInput = {
   expiringItems: RecipeInventoryItem[];
   preferences: RecipePreferences;
   includeExpired: boolean;
+  inventoryOnly: boolean;
+  excludedRecipeTitles: string[];
 };
 
 function toPromptItem(item: RecipeInventoryItem) {
@@ -22,6 +24,8 @@ export function buildRecipePromptPayload(input: RecipePromptInput) {
   return {
     max_recipes: input.maxRecipes,
     include_expired: input.includeExpired,
+    inventory_only: input.inventoryOnly,
+    excluded_recipe_titles: input.excludedRecipeTitles,
     preferences: input.preferences,
     inventory: input.inventory.map(toPromptItem),
     expiring: input.expiringItems.map(toPromptItem),
@@ -34,6 +38,8 @@ export function buildRecipeSystemPrompt() {
     "Return ONLY valid JSON that matches the provided schema.",
     "Prioritize expiring ingredients and minimize waste.",
     "List any ingredients not in inventory inside missing_ingredients.",
+    "If inventory_only is true, generate recipes using only listed inventory plus basic pantry staples, and return an empty missing_ingredients array.",
+    "Never generate a recipe with the same or very similar title to any excluded_recipe_titles entry.",
     "Include a short waste_reduction_note and nutrition estimate per recipe.",
     "Use pantry staples when helpful; list them in pantry_staples.",
     "Do not list pantry staples inside missing_ingredients.",

@@ -33,9 +33,11 @@ function SubmitButton({ disabled }: { disabled: boolean }) {
 export default function AddOptimizedShoppingButton({
   days,
   disabled,
+  inventoryOnly = false,
 }: {
   days: number;
   disabled: boolean;
+  inventoryOnly?: boolean;
 }) {
   const [state, formAction] = useActionState(addOptimizedShoppingItemsAction, initialState);
   const { addToast } = useToast();
@@ -48,6 +50,7 @@ export default function AddOptimizedShoppingButton({
   return (
     <form action={formAction}>
       <input type="hidden" name="days" value={days} />
+      <input type="hidden" name="inventoryOnly" value={inventoryOnly ? "true" : "false"} />
       <SubmitButton disabled={disabled} />
     </form>
   );
