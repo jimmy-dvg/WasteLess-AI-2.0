@@ -1,0 +1,55 @@
+import { NextResponse } from "next/server";
+import { requireUser } from "@/lib/auth";
+import {
+  createScanHistoryEntry,
+  importReceiptItemsToInventory,
+} from "@/scanning/scan-history.service";
+import { importReceiptItemsRequestSchema } from "@/scanning/validation";
+
+export const runtime = "nodejs";
+
+export async function POST(request: Request) {
+  const user = await requireUser();
+  const body = await request.json().catch(() => null);
+  const parsed = importReceiptItemsRequestSchema.safeParse(body);
+
+  if (!parsed.success) {
+    return NextResponse.json(
+      { success: false, error: parsed.error.issues[0]?.message ?? "Invalid import payload" },
+      { status: 400 }
+    );
+  }
+
+  try {
+    const importPayload = {
+      ...parsed.data,
+      items: parsed.data.items.map((item) => ({
+        ...item,
+        normalizedName: item.normalizedName ?? item.name,
+        unit: item.unit ?? null,
+        price: item.price ?? null,
+        brand: item.brand ?? null,
+        category: item.category ?? null,
+        shelfLifeDays: item.shelfLifeDays ?? null,
+        expirationDate: item.expirationDate ?? null,
+        storageLocation: item.storageLocation ?? null,
+      })),
+    };
+    const result = await importReceiptItemsToInventory(user.id, importPayload);
+
+    await createScanHistoryEntry(user.id, {
+      type: "receipt",
+      status: "processed",
+      metadata: {
+        receiptId: parsed.data.receiptId ?? null,
+        importedCount: result.importedCount,
+        skippedCount: result.skippedCount,
+      },
+    });
+
+    return NextResponse.json({ success: true, data: result });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unable to import receipt items";
+    return NextResponse.json({ success: false, error: message }, { status: 500 });
+  }
+}

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import AppProviders from "@/components/providers/AppProviders";
 
@@ -29,6 +29,11 @@ export const metadata: Metadata = {
     description:
       "Smart inventory tracking and AI-powered recipe recommendations to reduce food waste.",
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#059669",
+  viewportFit: "cover",
 };
 
 export default function RootLayout({

@@ -10,6 +10,11 @@ export const dashboardNavItems = [
     marker: "I",
   },
   {
+    label: "Scanner",
+    href: "/dashboard/scanning",
+    marker: "B",
+  },
+  {
     label: "Categories",
     href: "/dashboard/categories",
     marker: "C",

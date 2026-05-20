@@ -119,6 +119,27 @@ export const product_barcodes = pgTable("product_barcodes", {
   updated_at: timestamp("updated_at").defaultNow().notNull(),
 });
 
+export const barcode_products = pgTable(
+  "barcode_products",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    barcode: varchar("barcode", { length: 128 }).notNull(),
+    name: text("name").notNull(),
+    brand: text("brand"),
+    category: text("category"),
+    metadata: jsonb("metadata").default({}),
+    source: varchar("source", { length: 64 }).default("cache"),
+    last_lookup_at: timestamp("last_lookup_at").defaultNow().notNull(),
+    created_at: timestamp("created_at").defaultNow().notNull(),
+    updated_at: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    barcodeUnique: uniqueIndex("barcode_products_barcode_unique").on(table.barcode),
+    barcodeIdx: index("barcode_products_barcode_idx").on(table.barcode),
+    categoryIdx: index("barcode_products_category_idx").on(table.category),
+  })
+);
+
 export const inventory_items = pgTable("inventory_items", {
   id: uuid("id").defaultRandom().primaryKey(),
   household_id: uuid("household_id").notNull(),
@@ -274,6 +295,49 @@ export const receipts = pgTable("receipts", {
   created_at: timestamp("created_at").defaultNow().notNull(),
   updated_at: timestamp("updated_at").defaultNow().notNull(),
 });
+
+export const scan_history = pgTable(
+  "scan_history",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    user_id: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    type: varchar("type", { length: 40 }).notNull(),
+    barcode: varchar("barcode", { length: 128 }),
+    symbology: varchar("symbology", { length: 32 }),
+    raw_text: text("raw_text"),
+    status: varchar("status", { length: 32 }).default("processed").notNull(),
+    metadata: jsonb("metadata").default({}),
+    created_at: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    userCreatedIdx: index("scan_history_user_created_idx").on(table.user_id, table.created_at),
+    typeIdx: index("scan_history_type_idx").on(table.type),
+    barcodeIdx: index("scan_history_barcode_idx").on(table.barcode),
+  })
+);
+
+export const scanned_receipts = pgTable(
+  "scanned_receipts",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    user_id: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    image_url: text("image_url"),
+    raw_text: text("raw_text"),
+    extracted_data: jsonb("extracted_data").default({}),
+    status: varchar("status", { length: 32 }).default("processed").notNull(),
+    processed_at: timestamp("processed_at").defaultNow().notNull(),
+    created_at: timestamp("created_at").defaultNow().notNull(),
+    updated_at: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    userProcessedIdx: index("scanned_receipts_user_processed_idx").on(table.user_id, table.processed_at),
+    statusIdx: index("scanned_receipts_status_idx").on(table.status),
+  })
+);
 
 export const receipt_items = pgTable("receipt_items", {
   id: uuid("id").defaultRandom().primaryKey(),

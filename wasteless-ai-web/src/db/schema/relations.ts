@@ -1,5 +1,15 @@
 import { relations } from "drizzle-orm";
-import { categories, products, profiles, recipes, saved_recipes, users } from "./tables";
+import {
+  barcode_products,
+  categories,
+  products,
+  profiles,
+  recipes,
+  saved_recipes,
+  scan_history,
+  scanned_receipts,
+  users,
+} from "./tables";
 
 export const usersRelations = relations(users, ({ one, many }) => ({
   profile: one(profiles, { fields: [users.id], references: [profiles.id] }),
@@ -7,6 +17,8 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   products: many(products),
   recipes: many(recipes),
   savedRecipes: many(saved_recipes),
+  scanHistory: many(scan_history),
+  scannedReceipts: many(scanned_receipts),
 }));
 
 export const profilesRelations = relations(profiles, ({ one }) => ({
@@ -32,3 +44,13 @@ export const savedRecipesRelations = relations(saved_recipes, ({ one }) => ({
   recipe: one(recipes, { fields: [saved_recipes.recipe_id], references: [recipes.id] }),
   user: one(users, { fields: [saved_recipes.user_id], references: [users.id] }),
 }));
+
+export const scanHistoryRelations = relations(scan_history, ({ one }) => ({
+  user: one(users, { fields: [scan_history.user_id], references: [users.id] }),
+}));
+
+export const scannedReceiptsRelations = relations(scanned_receipts, ({ one }) => ({
+  user: one(users, { fields: [scanned_receipts.user_id], references: [users.id] }),
+}));
+
+export const barcodeProductsRelations = relations(barcode_products, () => ({}));
