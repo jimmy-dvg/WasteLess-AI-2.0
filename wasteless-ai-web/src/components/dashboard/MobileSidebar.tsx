@@ -1,14 +1,17 @@
 "use client";
 
 import Link from "next/link";
+import type { DashboardMode } from "@/features/dashboard-mode/constants";
+import DashboardModeSwitcher from "./DashboardModeSwitcher";
 import DashboardSidebar from "./DashboardSidebar";
 
 type MobileSidebarProps = {
   open: boolean;
   onClose: () => void;
+  dashboardMode: DashboardMode;
 };
 
-export default function MobileSidebar({ open, onClose }: MobileSidebarProps) {
+export default function MobileSidebar({ open, onClose, dashboardMode }: MobileSidebarProps) {
   if (!open) return null;
 
   return (
@@ -36,6 +39,9 @@ export default function MobileSidebar({ open, onClose }: MobileSidebarProps) {
           </button>
         </div>
         <DashboardSidebar onNavigate={onClose} />
+        <div className="mt-4">
+          <DashboardModeSwitcher key={dashboardMode} currentMode={dashboardMode} />
+        </div>
       </aside>
     </div>
   );

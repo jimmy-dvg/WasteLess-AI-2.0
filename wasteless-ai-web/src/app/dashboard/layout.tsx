@@ -1,7 +1,10 @@
 import Link from "next/link";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
+import DashboardModeSwitcher from "@/components/dashboard/DashboardModeSwitcher";
 import type { NotificationDropdownData } from "@/components/dashboard/NotificationBellDropdown";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
+import { DEFAULT_DASHBOARD_MODE, type DashboardMode } from "@/features/dashboard-mode/constants";
+import { getDashboardModeForUser } from "@/features/dashboard-mode/services/dashboard-mode.service";
 import { DEFAULT_NOTIFICATION_SETTINGS } from "@/features/notifications/constants";
 import {
   getNotificationCenterData,
@@ -17,11 +20,13 @@ export default async function DashboardLayout({ children }: { children: React.Re
     items: [],
   };
   let notificationSettings = DEFAULT_NOTIFICATION_SETTINGS;
+  let dashboardMode: DashboardMode = DEFAULT_DASHBOARD_MODE;
 
   try {
-    const [notificationData, settingsData] = await Promise.all([
+    const [notificationData, settingsData, mode] = await Promise.all([
       getNotificationCenterData(user.id),
       getNotificationSettingsForUser(user.id),
+      getDashboardModeForUser(user.id),
     ]);
 
     notifications = {
@@ -39,12 +44,14 @@ export default async function DashboardLayout({ children }: { children: React.Re
       })),
     };
     notificationSettings = settingsData.settings;
+    dashboardMode = mode;
   } catch {
     notifications = {
       unreadCount: 0,
       items: [],
     };
     notificationSettings = DEFAULT_NOTIFICATION_SETTINGS;
+    dashboardMode = DEFAULT_DASHBOARD_MODE;
   }
 
   return (
@@ -57,11 +64,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
           <p className="mt-1 text-sm text-slate-500">Smart household waste control</p>
         </div>
         <DashboardSidebar />
-        <div className="mt-auto rounded-lg border border-emerald-100 bg-emerald-50 p-4">
-          <p className="text-sm font-semibold text-emerald-900">Low-waste mode</p>
-          <p className="mt-1 text-xs leading-5 text-emerald-800">
-            Prioritize items that expire soon before planning your next grocery run.
-          </p>
+        <div className="mt-auto">
+          <DashboardModeSwitcher key={dashboardMode} currentMode={dashboardMode} />
         </div>
       </aside>
       <div className="lg:pl-72">
@@ -69,6 +73,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           user={user}
           notifications={notifications}
           notificationSettings={notificationSettings}
+          dashboardMode={dashboardMode}
         />
         <main className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">{children}</main>
       </div>

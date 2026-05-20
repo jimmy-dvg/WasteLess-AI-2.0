@@ -6,6 +6,7 @@ import NotificationBellDropdown, {
   type NotificationDropdownData,
 } from "./NotificationBellDropdown";
 import UserDropdown from "./UserDropdown";
+import type { DashboardMode } from "@/features/dashboard-mode/constants";
 import type { NotificationSettings } from "@/features/notifications/constants";
 
 type DashboardHeaderProps = {
@@ -16,12 +17,14 @@ type DashboardHeaderProps = {
   };
   notifications: NotificationDropdownData;
   notificationSettings: NotificationSettings;
+  dashboardMode: DashboardMode;
 };
 
 export default function DashboardHeader({
   user,
   notifications,
   notificationSettings,
+  dashboardMode,
 }: DashboardHeaderProps) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
@@ -61,7 +64,7 @@ export default function DashboardHeader({
           </div>
         </div>
       </header>
-      <MobileSidebar open={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
+      <MobileSidebar open={mobileNavOpen} onClose={() => setMobileNavOpen(false)} dashboardMode={dashboardMode} />
     </>
   );
 }
