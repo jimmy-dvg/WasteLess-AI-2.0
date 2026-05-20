@@ -30,6 +30,11 @@ export const dashboardNavItems = [
     marker: "M",
   },
   {
+    label: "Waste",
+    href: "/dashboard/waste",
+    marker: "W",
+  },
+  {
     label: "Recipes",
     href: "/dashboard/recipes",
     marker: "R",

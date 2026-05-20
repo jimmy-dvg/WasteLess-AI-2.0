@@ -29,7 +29,12 @@ export default async function ProductDetailsPage({ params }: { params: Promise<{
             >
               Edit
             </Link>
-            <ProductActions productId={product.id} />
+            <ProductActions
+              productId={product.id}
+              productName={product.name}
+              quantity={product.quantity}
+              unit={product.unit}
+            />
           </div>
         }
       />
