@@ -1100,6 +1100,9 @@ export async function markMealPlanItemCookedForUser(userId: string, householdId:
       title: existing.title,
     };
   }
+  if (existing.status === "skipped") {
+    throw new Error("Skipped meals cannot be marked cooked");
+  }
 
   const suggestions = parseConsumptionSuggestions(existing.consumptionSuggestions);
 

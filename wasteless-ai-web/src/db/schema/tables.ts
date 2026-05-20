@@ -245,8 +245,10 @@ export const meal_plans = pgTable(
   "meal_plans",
   {
     id: uuid("id").defaultRandom().primaryKey(),
-    household_id: uuid("household_id").notNull(),
-    created_by: uuid("created_by"),
+    household_id: uuid("household_id")
+      .notNull()
+      .references(() => households.id, { onDelete: "cascade" }),
+    created_by: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
     name: text("name").notNull(),
     status: varchar("status", { length: 32 }).default("active").notNull(),
     source: varchar("source", { length: 64 }).default("smart_planner").notNull(),

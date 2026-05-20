@@ -2,6 +2,7 @@ import { relations } from "drizzle-orm";
 import {
   barcode_products,
   categories,
+  households,
   meal_plan_inventory_usages,
   meal_plan_items,
   meal_plans,
@@ -48,6 +49,7 @@ export const recipesRelations = relations(recipes, ({ one, many }) => ({
 }));
 
 export const mealPlansRelations = relations(meal_plans, ({ one, many }) => ({
+  household: one(households, { fields: [meal_plans.household_id], references: [households.id] }),
   creator: one(users, { fields: [meal_plans.created_by], references: [users.id] }),
   items: many(meal_plan_items),
 }));

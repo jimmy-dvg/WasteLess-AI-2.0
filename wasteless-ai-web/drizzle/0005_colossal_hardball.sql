@@ -48,6 +48,14 @@ CREATE TABLE "meal_plan_inventory_usages" (
   "created_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
+ALTER TABLE "meal_plans"
+  ADD CONSTRAINT "meal_plans_household_id_households_id_fk"
+  FOREIGN KEY ("household_id") REFERENCES "households"("id") ON DELETE CASCADE;
+--> statement-breakpoint
+ALTER TABLE "meal_plans"
+  ADD CONSTRAINT "meal_plans_created_by_users_id_fk"
+  FOREIGN KEY ("created_by") REFERENCES "users"("id") ON DELETE SET NULL;
+--> statement-breakpoint
 ALTER TABLE "meal_plan_items"
   ADD CONSTRAINT "meal_plan_items_meal_plan_id_meal_plans_id_fk"
   FOREIGN KEY ("meal_plan_id") REFERENCES "meal_plans"("id") ON DELETE CASCADE;
