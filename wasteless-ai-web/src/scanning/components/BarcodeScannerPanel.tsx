@@ -5,6 +5,7 @@ import { BrowserMultiFormatReader, type IScannerControls } from "@zxing/browser"
 import { BarcodeFormat, DecodeHintType } from "@zxing/library";
 import { AlertCircle, Camera, PackageCheck, Plus, RotateCcw, ScanLine, Square } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
+import { createSampleBarcodeResult } from "@/scanning/sample-data";
 import { addDaysToDate, toDateInputValue } from "@/scanning/shelf-life";
 import type { BarcodeLookupResult, BarcodeProductMetadata } from "@/scanning/types";
 import type { InventoryCategory } from "@/types/inventory";
@@ -256,6 +257,17 @@ export default function BarcodeScannerPanel({ categories, onHistoryChanged }: Ba
             >
               <RotateCcw className="h-4 w-4" aria-hidden="true" />
               Reset
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setLookupResult(createSampleBarcodeResult());
+                setDetectedFormat("TEST_MODE");
+                addToast("Sample barcode product loaded", "info");
+              }}
+              className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+            >
+              Sample
             </button>
           </div>
 

@@ -6,6 +6,7 @@ import {
   profiles,
   recipes,
   saved_recipes,
+  scan_import_batches,
   scan_history,
   scanned_receipts,
   users,
@@ -19,6 +20,7 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   savedRecipes: many(saved_recipes),
   scanHistory: many(scan_history),
   scannedReceipts: many(scanned_receipts),
+  scanImportBatches: many(scan_import_batches),
 }));
 
 export const profilesRelations = relations(profiles, ({ one }) => ({
@@ -54,3 +56,7 @@ export const scannedReceiptsRelations = relations(scanned_receipts, ({ one }) =>
 }));
 
 export const barcodeProductsRelations = relations(barcode_products, () => ({}));
+
+export const scanImportBatchesRelations = relations(scan_import_batches, ({ one }) => ({
+  user: one(users, { fields: [scan_import_batches.user_id], references: [users.id] }),
+}));

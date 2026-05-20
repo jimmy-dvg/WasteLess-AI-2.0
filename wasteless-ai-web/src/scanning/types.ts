@@ -133,4 +133,33 @@ export type ImportReceiptItemsResult = {
   importedCount: number;
   productIds: string[];
   skippedCount: number;
+  batchId: string | null;
+};
+
+export type ScanImportBatch = {
+  id: string;
+  source: ScanType | string;
+  receiptId: string | null;
+  productIds: string[];
+  importedCount: number;
+  status: "active" | "reverted" | string;
+  metadata: Record<string, unknown>;
+  createdAt: Date;
+  revertedAt: Date | null;
+};
+
+export type ScannerDiagnosticStatus = "ready" | "warning" | "missing";
+
+export type ScannerDiagnosticItem = {
+  id: string;
+  label: string;
+  status: ScannerDiagnosticStatus;
+  message: string;
+  optional: boolean;
+};
+
+export type ScannerDiagnostics = {
+  overallStatus: ScannerDiagnosticStatus;
+  photoRecognitionProvider: "auto" | "openai" | "gemini";
+  items: ScannerDiagnosticItem[];
 };

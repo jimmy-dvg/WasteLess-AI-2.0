@@ -339,6 +339,28 @@ export const scanned_receipts = pgTable(
   })
 );
 
+export const scan_import_batches = pgTable(
+  "scan_import_batches",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    user_id: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    source: varchar("source", { length: 40 }).notNull(),
+    receipt_id: uuid("receipt_id"),
+    product_ids: jsonb("product_ids").default([]).notNull(),
+    imported_count: integer("imported_count").default(0).notNull(),
+    status: varchar("status", { length: 32 }).default("active").notNull(),
+    metadata: jsonb("metadata").default({}),
+    created_at: timestamp("created_at").defaultNow().notNull(),
+    reverted_at: timestamp("reverted_at"),
+  },
+  (table) => ({
+    userCreatedIdx: index("scan_import_batches_user_created_idx").on(table.user_id, table.created_at),
+    statusIdx: index("scan_import_batches_status_idx").on(table.status),
+  })
+);
+
 export const receipt_items = pgTable("receipt_items", {
   id: uuid("id").defaultRandom().primaryKey(),
   receipt_id: uuid("receipt_id").notNull(),

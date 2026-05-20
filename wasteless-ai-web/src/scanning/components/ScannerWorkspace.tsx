@@ -3,10 +3,12 @@
 import { useCallback, useState } from "react";
 import { Images, ReceiptText, ScanBarcode } from "lucide-react";
 import BarcodeScannerPanel from "@/scanning/components/BarcodeScannerPanel";
+import ImportBatchesPanel from "@/scanning/components/ImportBatchesPanel";
 import PhotoRecognitionPanel from "@/scanning/components/PhotoRecognitionPanel";
 import ReceiptScannerPanel from "@/scanning/components/ReceiptScannerPanel";
+import ScannerDiagnosticsPanel from "@/scanning/components/ScannerDiagnosticsPanel";
 import ScanHistoryPanel from "@/scanning/components/ScanHistoryPanel";
-import type { ScanHistoryItem } from "@/scanning/types";
+import type { ScanHistoryItem, ScanImportBatch, ScannerDiagnostics } from "@/scanning/types";
 import type { InventoryCategory } from "@/types/inventory";
 
 type ApiResponse<T> =
@@ -16,11 +18,20 @@ type ApiResponse<T> =
 type ScannerWorkspaceProps = {
   categories: InventoryCategory[];
   initialHistory: ScanHistoryItem[];
+  initialImportBatches: ScanImportBatch[];
+  initialDiagnostics: ScannerDiagnostics;
 };
 
-export default function ScannerWorkspace({ categories, initialHistory }: ScannerWorkspaceProps) {
+export default function ScannerWorkspace({
+  categories,
+  initialHistory,
+  initialImportBatches,
+  initialDiagnostics,
+}: ScannerWorkspaceProps) {
   const [activeTab, setActiveTab] = useState<"barcode" | "receipt" | "photo">("barcode");
   const [history, setHistory] = useState(initialHistory);
+  const [importBatches, setImportBatches] = useState(initialImportBatches);
+  const [diagnostics, setDiagnostics] = useState(initialDiagnostics);
 
   const refreshHistory = useCallback(async () => {
     try {
@@ -31,6 +42,30 @@ export default function ScannerWorkspace({ categories, initialHistory }: Scanner
       return;
     }
   }, []);
+
+  const refreshImportBatches = useCallback(async () => {
+    try {
+      const response = await fetch("/api/scanning/import-batches", { cache: "no-store" });
+      const payload = (await response.json()) as ApiResponse<ScanImportBatch[]>;
+      if (payload.success) setImportBatches(payload.data);
+    } catch {
+      return;
+    }
+  }, []);
+
+  const refreshDiagnostics = useCallback(async () => {
+    try {
+      const response = await fetch("/api/scanning/diagnostics", { cache: "no-store" });
+      const payload = (await response.json()) as ApiResponse<ScannerDiagnostics>;
+      if (payload.success) setDiagnostics(payload.data);
+    } catch {
+      return;
+    }
+  }, []);
+
+  const refreshScannerData = useCallback(async () => {
+    await Promise.all([refreshHistory(), refreshImportBatches(), refreshDiagnostics()]);
+  }, [refreshDiagnostics, refreshHistory, refreshImportBatches]);
 
   return (
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
@@ -80,15 +115,19 @@ export default function ScannerWorkspace({ categories, initialHistory }: Scanner
         </div>
 
         {activeTab === "barcode" ? (
-          <BarcodeScannerPanel categories={categories} onHistoryChanged={refreshHistory} />
+          <BarcodeScannerPanel categories={categories} onHistoryChanged={refreshScannerData} />
         ) : activeTab === "receipt" ? (
-          <ReceiptScannerPanel categories={categories} onHistoryChanged={refreshHistory} />
+          <ReceiptScannerPanel categories={categories} onHistoryChanged={refreshScannerData} />
         ) : (
-          <PhotoRecognitionPanel categories={categories} onHistoryChanged={refreshHistory} />
+          <PhotoRecognitionPanel categories={categories} onHistoryChanged={refreshScannerData} />
         )}
       </div>
 
-      <ScanHistoryPanel history={history} />
+      <div className="space-y-4">
+        <ScannerDiagnosticsPanel diagnostics={diagnostics} />
+        <ImportBatchesPanel batches={importBatches} onChanged={refreshScannerData} />
+        <ScanHistoryPanel history={history} />
+      </div>
     </div>
   );
 }

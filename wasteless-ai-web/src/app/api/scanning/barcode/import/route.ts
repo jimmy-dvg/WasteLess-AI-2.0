@@ -33,11 +33,12 @@ export async function POST(request: Request) {
       status: "processed",
       metadata: {
         importedProductId: created.id,
+        batchId: created.batchId,
         product: parsed.data,
       },
     });
 
-    return NextResponse.json({ success: true, data: { productId: created.id } });
+    return NextResponse.json({ success: true, data: { productId: created.id, batchId: created.batchId } });
   } catch {
     return NextResponse.json({ success: false, error: "Unable to import barcode product" }, { status: 500 });
   }

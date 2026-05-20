@@ -5,6 +5,7 @@ import { Camera, ImageUp, Loader2, Sparkles, Upload } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
 import { preprocessScanImage } from "@/image-processing/browser";
 import ImportConfirmationModal from "@/scanning/components/ImportConfirmationModal";
+import { createSampleFoodPhotoResult } from "@/scanning/sample-data";
 import type { ParsedReceipt, PhotoRecognitionResult } from "@/scanning/types";
 import type { InventoryCategory } from "@/types/inventory";
 
@@ -73,6 +74,13 @@ export default function PhotoRecognitionPanel({ categories, onHistoryChanged }: 
     }
   };
 
+  const loadSampleFoodPhoto = () => {
+    setPreviewUrl(null);
+    setParsedReceipt(createSampleFoodPhotoResult());
+    setConfirmOpen(true);
+    addToast("Sample food photo result loaded", "info");
+  };
+
   return (
     <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
       <div className="border-b border-slate-200 p-4">
@@ -119,6 +127,14 @@ export default function PhotoRecognitionPanel({ categories, onHistoryChanged }: 
               Use camera
             </button>
           </div>
+          <button
+            type="button"
+            onClick={loadSampleFoodPhoto}
+            disabled={isAnalyzing}
+            className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Load sample food scan
+          </button>
 
           <input
             ref={fileInputRef}

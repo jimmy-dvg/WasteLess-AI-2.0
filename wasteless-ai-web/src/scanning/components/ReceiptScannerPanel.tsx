@@ -5,6 +5,7 @@ import { Camera, FileText, ImageUp, Loader2, Sparkles, Upload } from "lucide-rea
 import { useToast } from "@/components/ui/Toast";
 import { preprocessReceiptImage } from "@/image-processing/browser";
 import ImportConfirmationModal from "@/scanning/components/ImportConfirmationModal";
+import { createSampleReceiptResult } from "@/scanning/sample-data";
 import type { OCRResult, ParsedReceipt } from "@/scanning/types";
 import type { InventoryCategory } from "@/types/inventory";
 
@@ -129,6 +130,25 @@ export default function ReceiptScannerPanel({ categories, onHistoryChanged }: Re
     }
   };
 
+  const loadSampleReceipt = () => {
+    const sample = createSampleReceiptResult();
+    setPreviewUrl(null);
+    setOcrResult({
+      rawText: sample.rawText,
+      confidence: 0.99,
+      lines: sample.rawText.split("\n").map((text) => ({ text, confidence: 0.99 })),
+      engine: "tesseract.js",
+      processedAt: new Date().toISOString(),
+      warnings: [],
+    });
+    setRawText(sample.rawText);
+    setParsedReceipt(sample);
+    setReceiptId(null);
+    setImageUrl(null);
+    setConfirmOpen(true);
+    addToast("Sample receipt loaded", "info");
+  };
+
   return (
     <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
       <div className="border-b border-slate-200 p-4">
@@ -175,6 +195,14 @@ export default function ReceiptScannerPanel({ categories, onHistoryChanged }: Re
               Use camera
             </button>
           </div>
+          <button
+            type="button"
+            onClick={loadSampleReceipt}
+            disabled={isProcessingImage}
+            className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Load sample receipt
+          </button>
 
           <input
             ref={fileInputRef}

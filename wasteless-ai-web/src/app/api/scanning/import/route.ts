@@ -38,10 +38,11 @@ export async function POST(request: Request) {
     const result = await importReceiptItemsToInventory(user.id, importPayload);
 
     await createScanHistoryEntry(user.id, {
-      type: "receipt",
+      type: parsed.data.source === "receipt" ? "receipt" : parsed.data.source,
       status: "processed",
       metadata: {
         receiptId: parsed.data.receiptId ?? null,
+        batchId: result.batchId,
         importedCount: result.importedCount,
         skippedCount: result.skippedCount,
       },

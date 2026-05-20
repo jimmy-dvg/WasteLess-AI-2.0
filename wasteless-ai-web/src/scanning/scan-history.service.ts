@@ -10,6 +10,7 @@ import type {
   ImportReceiptItemInput,
   ImportReceiptItemsResult,
   ParsedReceipt,
+  ScanImportBatch,
   ScanHistoryItem,
   ScanStatus,
   ScanType,
@@ -60,6 +61,100 @@ export async function getRecentScanHistory(userId: string, limit = 12): Promise<
     metadata: (row.metadata as Record<string, unknown> | null) ?? {},
     createdAt: row.created_at,
   }));
+}
+
+function normalizeProductIds(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((entry): entry is string => typeof entry === "string");
+}
+
+export async function createScanImportBatch(
+  userId: string,
+  data: {
+    source: ScanType | string;
+    productIds: string[];
+    receiptId?: string | null;
+    metadata?: Record<string, unknown>;
+  }
+) {
+  if (data.productIds.length === 0) return null;
+
+  const rows = await db
+    .insert(schema.scan_import_batches)
+    .values({
+      user_id: userId,
+      source: data.source,
+      receipt_id: data.receiptId ?? null,
+      product_ids: data.productIds,
+      imported_count: data.productIds.length,
+      status: "active",
+      metadata: data.metadata ?? {},
+    })
+    .returning({ id: schema.scan_import_batches.id });
+
+  return rows[0] ?? null;
+}
+
+export async function getRecentImportBatches(userId: string, limit = 8): Promise<ScanImportBatch[]> {
+  const rows = await db
+    .select()
+    .from(schema.scan_import_batches)
+    .where(eq(schema.scan_import_batches.user_id, userId))
+    .orderBy(desc(schema.scan_import_batches.created_at))
+    .limit(limit);
+
+  return rows.map((row) => ({
+    id: row.id,
+    source: row.source,
+    receiptId: row.receipt_id ?? null,
+    productIds: normalizeProductIds(row.product_ids),
+    importedCount: row.imported_count,
+    status: row.status,
+    metadata: (row.metadata as Record<string, unknown> | null) ?? {},
+    createdAt: row.created_at,
+    revertedAt: row.reverted_at ?? null,
+  }));
+}
+
+export async function undoScanImportBatch(userId: string, batchId: string) {
+  const rows = await db
+    .select()
+    .from(schema.scan_import_batches)
+    .where(and(eq(schema.scan_import_batches.id, batchId), eq(schema.scan_import_batches.user_id, userId)))
+    .limit(1);
+
+  const batch = rows[0];
+  if (!batch) throw new Error("Import batch was not found");
+  if (batch.status !== "active") throw new Error("Import batch was already reverted");
+
+  const productIds = normalizeProductIds(batch.product_ids);
+  if (productIds.length === 0) throw new Error("Import batch does not contain products");
+
+  const deletedRows = await db
+    .delete(schema.products)
+    .where(and(eq(schema.products.user_id, userId), inArray(schema.products.id, productIds)))
+    .returning({ id: schema.products.id });
+
+  await db
+    .update(schema.scan_import_batches)
+    .set({
+      status: "reverted",
+      reverted_at: new Date(),
+      metadata: {
+        ...(batch.metadata as Record<string, unknown> | null),
+        revertedProductIds: deletedRows.map((row) => row.id),
+      },
+    })
+    .where(and(eq(schema.scan_import_batches.id, batchId), eq(schema.scan_import_batches.user_id, userId)));
+
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/inventory");
+  revalidatePath("/dashboard/scanning");
+
+  return {
+    revertedCount: deletedRows.length,
+    batchId,
+  };
 }
 
 export async function createScannedReceipt(
@@ -135,7 +230,7 @@ export async function importReceiptItemsToInventory(
 ): Promise<ImportReceiptItemsResult> {
   const selectedItems = data.items.filter((item) => item.selected !== false);
   if (selectedItems.length === 0) {
-    return { importedCount: 0, productIds: [], skippedCount: data.items.length };
+    return { importedCount: 0, productIds: [], skippedCount: data.items.length, batchId: null };
   }
 
   if (data.receiptId && !(await userOwnsReceipt(userId, data.receiptId))) {
@@ -180,14 +275,26 @@ export async function importReceiptItemsToInventory(
     )
     .returning({ id: schema.products.id });
 
+  const productIds = inserted.map((row) => row.id);
+  const batch = await createScanImportBatch(userId, {
+    source,
+    receiptId: data.receiptId ?? null,
+    productIds,
+    metadata: {
+      skippedCount: data.items.length - selectedItems.length,
+      purchaseDate: data.purchaseDate ?? null,
+    },
+  });
+
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/inventory");
   revalidatePath("/dashboard/scanning");
 
   return {
     importedCount: inserted.length,
-    productIds: inserted.map((row) => row.id),
+    productIds,
     skippedCount: data.items.length - selectedItems.length,
+    batchId: batch?.id ?? null,
   };
 }
 
@@ -256,5 +363,17 @@ export async function importBarcodeProductToInventory(
   revalidatePath("/dashboard/inventory");
   revalidatePath("/dashboard/scanning");
 
-  return rows[0] ?? null;
+  const created = rows[0] ?? null;
+  const batch = created
+    ? await createScanImportBatch(userId, {
+        source: "barcode",
+        productIds: [created.id],
+        metadata: {
+          barcode: data.barcode,
+          name: data.name,
+        },
+      })
+    : null;
+
+  return created ? { ...created, batchId: batch?.id ?? null } : null;
 }
