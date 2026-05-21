@@ -26,3 +26,8 @@ export const householdMemberIdSchema = z.object({
 export const activeHouseholdSchema = z.object({
   householdId: z.string().uuid(),
 });
+
+export const householdPreferencesSchema = z.object({
+  defaultStorageLocation: z.enum(["pantry", "fridge", "freezer", "counter", "cellar", "other"]),
+  shoppingCadence: z.enum(["weekly", "biweekly", "as_needed"]),
+});

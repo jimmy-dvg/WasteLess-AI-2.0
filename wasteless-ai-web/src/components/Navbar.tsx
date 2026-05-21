@@ -1,127 +1,112 @@
 "use client";
 
-import React, { useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import Button from "./Button";
+import { Menu, X } from "lucide-react";
 import UserMenu from "./UserMenu";
 
 export default function Navbar({ user }: { user?: { id: string; name: string; email: string } | null }) {
   const [isOpen, setIsOpen] = useState(false);
 
   const navLinks = [
+    { href: "#quick-access", label: "Quick access" },
     { href: "#features", label: "Features" },
-    { href: "#how-it-works", label: "How It Works" },
+    { href: "#how-it-works", label: "How it works" },
     { href: "#benefits", label: "Benefits" },
   ];
 
+  const linkButton =
+    "inline-flex items-center justify-center rounded-lg px-3 py-2 text-sm font-bold transition";
+  const outlineButton = `${linkButton} border border-slate-200 text-slate-700 hover:bg-slate-50`;
+  const primaryButton = `${linkButton} bg-emerald-600 text-white hover:bg-emerald-700`;
+  const secondaryButton = `${linkButton} border border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100`;
+
   return (
-    <nav className="sticky top-0 z-50 border-b border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950">
+    <nav className="sticky top-0 z-50 border-b border-slate-200 bg-white/95 backdrop-blur">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex h-16 items-center justify-between">
-          {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 font-bold text-xl">
-            <div className="w-8 h-8 bg-emerald-600 rounded-lg flex items-center justify-center text-white">
-              🌱
-            </div>
+        <div className="flex min-h-16 items-center justify-between gap-4">
+          <Link href="/" className="flex items-center gap-2 text-xl font-bold text-slate-950">
+            <span className="grid h-8 w-8 place-items-center rounded-lg bg-emerald-600 text-xs font-bold text-white">
+              WL
+            </span>
             <span className="hidden sm:inline">WasteLessAI</span>
           </Link>
 
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-1">
+          <div className="hidden items-center gap-1 md:flex">
             {navLinks.map((link) => (
               <a
                 key={link.href}
                 href={link.href}
-                className="px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:text-emerald-600 dark:text-slate-300 dark:hover:text-emerald-400"
+                className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-emerald-700"
               >
                 {link.label}
               </a>
             ))}
           </div>
 
-          {/* CTA Buttons */}
-          <div className="flex items-center gap-3">
-            {!user && (
+          <div className="flex items-center gap-2">
+            {!user ? (
               <>
-                <Link href="/login" className="hidden sm:inline">
-                  <Button variant="outline" size="sm">
-                    Login
-                  </Button>
+                <Link href="/login" className={`${outlineButton} hidden sm:inline-flex`}>
+                  Login
                 </Link>
-                <Link href="/register" className="hidden sm:inline">
-                  <Button variant="primary" size="sm">
-                    Register
-                  </Button>
+                <Link href="/register" className={`${primaryButton} hidden sm:inline-flex`}>
+                  Register
                 </Link>
               </>
+            ) : (
+              <UserMenu user={user} />
             )}
 
-            {user && <UserMenu user={user} />}
+            <Link href="/dashboard" className={`${secondaryButton} hidden sm:inline-flex`}>
+              Dashboard
+            </Link>
 
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => window.open("https://app.wastelessai.com", "_blank")}
-            >
-              Get Started
-            </Button>
-
-            {/* Mobile Menu Button */}
             <button
-              onClick={() => setIsOpen(!isOpen)}
-              className="md:hidden p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
-              aria-label="Toggle menu"
+              type="button"
+              onClick={() => setIsOpen((value) => !value)}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 md:hidden"
+              aria-label={isOpen ? "Close menu" : "Open menu"}
+              aria-expanded={isOpen}
             >
-              <svg
-                className="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d={isOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"}
-                />
-              </svg>
+              {isOpen ? <X className="h-5 w-5" aria-hidden="true" /> : <Menu className="h-5 w-5" aria-hidden="true" />}
             </button>
           </div>
         </div>
 
-        {/* Mobile Navigation */}
-        {isOpen && (
-          <div className="md:hidden border-t border-slate-200 dark:border-slate-800 py-4 space-y-2">
-            {navLinks.map((link) => (
-              <a
-                key={link.href}
-                href={link.href}
-                className="block px-4 py-2 text-sm font-medium text-slate-700 hover:text-emerald-600 dark:text-slate-300 dark:hover:text-emerald-400 transition-colors"
-                onClick={() => setIsOpen(false)}
-              >
-                {link.label}
-              </a>
-            ))}
-            <div className="px-4 pt-2 space-y-2">
+        {isOpen ? (
+          <div className="border-t border-slate-200 py-4 md:hidden">
+            <div className="grid gap-1">
+              {navLinks.map((link) => (
+                <a
+                  key={link.href}
+                  href={link.href}
+                  className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 hover:text-emerald-700"
+                  onClick={() => setIsOpen(false)}
+                >
+                  {link.label}
+                </a>
+              ))}
+            </div>
+            <div className="mt-4 grid gap-2">
               {!user ? (
                 <>
-                  <Link href="/login" className="block w-full">
-                    <Button variant="outline" size="sm" className="w-full">
-                      Login
-                    </Button>
+                  <Link href="/login" className={outlineButton} onClick={() => setIsOpen(false)}>
+                    Login
                   </Link>
-                  <Link href="/register" className="block w-full">
-                    <Button variant="primary" size="sm" className="w-full">
-                      Register
-                    </Button>
+                  <Link href="/register" className={primaryButton} onClick={() => setIsOpen(false)}>
+                    Register
                   </Link>
                 </>
               ) : (
                 <UserMenu user={user} />
               )}
+              <Link href="/dashboard" className={secondaryButton} onClick={() => setIsOpen(false)}>
+                Dashboard
+              </Link>
             </div>
           </div>
-        )}
+        ) : null}
       </div>
     </nav>
   );

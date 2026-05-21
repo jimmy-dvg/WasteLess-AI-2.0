@@ -23,6 +23,7 @@ type ShoppingListProps = {
     name: string;
   } | null;
   items: ShoppingListItem[];
+  shoppingCadenceLabel?: string;
 };
 
 const initialState: ShoppingActionState = {
@@ -45,7 +46,7 @@ function AddButton() {
   );
 }
 
-export default function ShoppingList({ list, items }: ShoppingListProps) {
+export default function ShoppingList({ list, items, shoppingCadenceLabel = "Weekly" }: ShoppingListProps) {
   const [state, formAction] = useActionState(addShoppingItem, initialState);
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -68,6 +69,9 @@ export default function ShoppingList({ list, items }: ShoppingListProps) {
                 {items.length} item{items.length === 1 ? "" : "s"} tracked, {completedCount} complete
               </p>
             </div>
+            <span className="rounded-lg bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700 ring-1 ring-emerald-100">
+              {shoppingCadenceLabel}
+            </span>
           </div>
         </div>
 

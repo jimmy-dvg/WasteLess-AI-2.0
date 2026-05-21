@@ -1,108 +1,72 @@
-
-"use client";
-
-import React from "react";
-import Button from "./Button";
+import Link from "next/link";
+import { ArrowRight, Barcode, ChefHat, ClipboardList } from "lucide-react";
 import SectionWrapper from "./SectionWrapper";
+
+const actionLinks = [
+  {
+    label: "Add inventory",
+    href: "/dashboard/inventory",
+    icon: ClipboardList,
+  },
+  {
+    label: "Scan items",
+    href: "/dashboard/scanning",
+    icon: Barcode,
+  },
+  {
+    label: "Generate recipes",
+    href: "/dashboard/recipes",
+    icon: ChefHat,
+  },
+];
 
 export default function CTASection() {
   return (
-    <SectionWrapper className="py-20 sm:py-28 lg:py-36">
-      <div className="max-w-3xl mx-auto">
-        {/* Main CTA Card */}
-        <div className="bg-gradient-to-br from-emerald-500 via-emerald-600 to-teal-600 rounded-3xl p-12 md:p-16 text-center space-y-8 shadow-2xl">
-          {/* Icon */}
-          <div className="text-6xl inline-block">✨</div>
-
-          {/* Headline */}
-          <div className="space-y-3">
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white">
-              Ready to Stop Wasting Food?
+    <SectionWrapper className="py-16 sm:py-20 lg:py-24">
+      <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-6 sm:p-8 lg:p-10">
+        <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-center">
+          <div>
+            <p className="text-sm font-bold uppercase tracking-normal text-emerald-700">Ready when you are</p>
+            <h2 className="mt-2 text-3xl font-bold text-slate-950 sm:text-4xl">
+              Start with one product, then let the system connect the rest.
             </h2>
-            <p className="text-lg text-emerald-100 max-w-2xl mx-auto">
-              Join thousands of families reducing waste and saving money. Start
-              your free trial today—no credit card required.
+            <p className="mt-3 max-w-2xl text-base leading-7 text-emerald-900">
+              Add a few ingredients, generate recipes from what is available, and use the shopping list only for the gaps.
             </p>
-          </div>
-
-          {/* Feature List */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 py-8 border-y border-emerald-400/30">
-            <div className="space-y-1">
-              <p className="font-semibold text-white text-lg">Free Forever</p>
-              <p className="text-emerald-100 text-sm">Basic features at no cost</p>
-            </div>
-            <div className="space-y-1">
-              <p className="font-semibold text-white text-lg">No Ads</p>
-              <p className="text-emerald-100 text-sm">Clean, focused experience</p>
-            </div>
-            <div className="space-y-1">
-              <p className="font-semibold text-white text-lg">AI-Powered</p>
-              <p className="text-emerald-100 text-sm">Smart recommendations</p>
-            </div>
-          </div>
-
-          {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
-            <Button
-              variant="secondary"
-              size="lg"
-              onClick={() =>
-                window.open("https://app.wastelessai.com/signup", "_blank")
-              }
-            >
-              Get Started Free
-              <span>→</span>
-            </Button>
-            <Button
-              variant="outline"
-              size="lg"
-              onClick={() => {
-                window.open("https://calendly.com/wastelessai/demo", "_blank");
-              }}
-            >
-              Book a Demo
-            </Button>
-          </div>
-
-          {/* Trust Footer */}
-          <div className="text-emerald-100 text-sm">
-            <p>💪 100% no credit card required</p>
-            <p>✓ Cancel anytime with one click</p>
-          </div>
-        </div>
-
-        {/* Backup CTA */}
-        <div className="mt-12 p-8 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-4">
-          <div className="flex flex-col sm:flex-row items-center gap-6">
-            <div className="flex-1">
-              <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
-                Questions? We are here to help
-              </h3>
-              <p className="text-slate-600 dark:text-slate-400">
-                Our team is available 24/7 to help you get started and answer
-                any questions.
-              </p>
-            </div>
-            <div className="flex gap-3 flex-shrink-0">
-              <Button
-                variant="primary"
-                size="md"
-                onClick={() => {
-                  window.location.href = "mailto:support@wastelessai.com";
-                }}
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+              <Link
+                href="/register"
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-emerald-700"
               >
-                Email Us
-              </Button>
-              <Button
-                variant="secondary"
-                size="md"
-                onClick={() => {
-                  window.open("https://chat.wastelessai.com", "_blank");
-                }}
+                Create account
+                <ArrowRight className="h-4 w-4" aria-hidden="true" />
+              </Link>
+              <Link
+                href="/dashboard"
+                className="inline-flex items-center justify-center rounded-lg border border-emerald-300 bg-white px-5 py-3 text-sm font-bold text-emerald-800 transition hover:bg-emerald-100"
               >
-                Chat
-              </Button>
+                Open dashboard
+              </Link>
             </div>
+          </div>
+
+          <div className="grid gap-3">
+            {actionLinks.map((item) => {
+              const Icon = item.icon;
+
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="flex items-center gap-3 rounded-lg border border-emerald-200 bg-white p-4 text-sm font-bold text-slate-800 shadow-sm transition hover:border-emerald-300 hover:text-emerald-700"
+                >
+                  <span className="grid h-10 w-10 place-items-center rounded-lg bg-emerald-50 text-emerald-700">
+                    <Icon className="h-5 w-5" aria-hidden="true" />
+                  </span>
+                  {item.label}
+                </Link>
+              );
+            })}
           </div>
         </div>
       </div>

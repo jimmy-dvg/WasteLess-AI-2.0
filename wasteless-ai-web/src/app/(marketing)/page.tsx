@@ -1,4 +1,5 @@
 import HeroSection from "@/components/HeroSection";
+import QuickAccessSection from "@/components/QuickAccessSection";
 import FeaturesSection from "@/components/FeaturesSection";
 import HowItWorksSection from "@/components/HowItWorksSection";
 import BenefitsSection from "@/components/BenefitsSection";
@@ -8,6 +9,7 @@ export default function Home() {
   return (
     <>
       <HeroSection />
+      <QuickAccessSection />
       <FeaturesSection />
       <HowItWorksSection />
       <BenefitsSection />

@@ -6,6 +6,7 @@ import StatusBadge from "@/components/dashboard/StatusBadge";
 import { getDashboardOverview } from "@/db/queries/dashboard";
 import { requireUser } from "@/lib/auth";
 import { formatDate, formatRelativeExpiration } from "@/lib/dashboard-utils";
+import { Barcode, CalendarClock, ChefHat, ClipboardList, Leaf, ShoppingBasket } from "lucide-react";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -47,6 +48,45 @@ export default async function DashboardPage() {
     },
   ];
 
+  const quickActions = [
+    {
+      label: "Add inventory",
+      description: "Track a new pantry, fridge, or freezer item.",
+      href: "/dashboard/inventory#add-inventory-item",
+      icon: ClipboardList,
+    },
+    {
+      label: "Scan products",
+      description: "Use barcode, receipt, or photo import.",
+      href: "/dashboard/scanning",
+      icon: Barcode,
+    },
+    {
+      label: "Generate recipes",
+      description: "Use expiring ingredients in meal ideas.",
+      href: "/dashboard/recipes",
+      icon: ChefHat,
+    },
+    {
+      label: "Plan week",
+      description: "Build meals around current inventory.",
+      href: "/dashboard/meal-plan",
+      icon: CalendarClock,
+    },
+    {
+      label: "Shop gaps",
+      description: "Review missing ingredients and open items.",
+      href: "/dashboard/shopping",
+      icon: ShoppingBasket,
+    },
+    {
+      label: "Review waste",
+      description: "Find patterns in discarded products.",
+      href: "/dashboard/waste",
+      icon: Leaf,
+    },
+  ];
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -66,6 +106,41 @@ export default async function DashboardPage() {
         {statCards.map((card) => (
           <StatsCard key={card.label} {...card} />
         ))}
+      </section>
+
+      <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-950">Quick actions</h2>
+            <p className="text-sm text-slate-500">Start the most common waste-reduction workflows from one place.</p>
+          </div>
+          <Link href="/dashboard/recipes" className="text-sm font-semibold text-emerald-700 hover:text-emerald-800">
+            Smart suggestions
+          </Link>
+        </div>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {quickActions.map((action) => {
+            const Icon = action.icon;
+
+            return (
+              <Link
+                key={action.href}
+                href={action.href}
+                className="group rounded-lg border border-slate-200 bg-slate-50 p-4 transition hover:border-emerald-200 hover:bg-emerald-50"
+              >
+                <div className="flex items-start gap-3">
+                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-white text-emerald-700 ring-1 ring-slate-200 group-hover:ring-emerald-200">
+                    <Icon className="h-5 w-5" aria-hidden="true" />
+                  </span>
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-950">{action.label}</h3>
+                    <p className="mt-1 text-xs leading-5 text-slate-500">{action.description}</p>
+                  </div>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
       </section>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.5fr)_minmax(320px,0.8fr)]">

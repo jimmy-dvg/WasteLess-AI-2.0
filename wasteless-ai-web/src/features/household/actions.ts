@@ -10,8 +10,10 @@ import {
   switchActiveHouseholdForUser,
   updateHouseholdMemberRole,
 } from "@/features/household/services/household.service";
+import { updateHouseholdPreferencesForUser } from "@/features/household/services/household-preferences.service";
 import {
   activeHouseholdSchema,
+  householdPreferencesSchema,
   householdInvitationIdSchema,
   householdInvitationSchema,
   householdInvitationTokenSchema,
@@ -176,6 +178,30 @@ export async function declineHouseholdInvitationAction(
     revalidateHouseholdPaths();
 
     return { success: true, message: "Invitation declined." };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : initialError };
+  }
+}
+
+export async function updateHouseholdPreferencesAction(
+  _prevState: HouseholdActionState,
+  formData: FormData
+): Promise<HouseholdActionState> {
+  const parsed = householdPreferencesSchema.safeParse(Object.fromEntries(formData.entries()));
+  if (!parsed.success) {
+    return {
+      success: false,
+      error: parsed.error.issues[0]?.message ?? "Invalid household preferences",
+    };
+  }
+
+  try {
+    const user = await requireUser();
+    await updateHouseholdPreferencesForUser(user, parsed.data);
+    revalidatePath("/dashboard/settings");
+    revalidatePath("/dashboard/inventory");
+
+    return { success: true, message: "Household preferences saved." };
   } catch (error) {
     return { success: false, error: error instanceof Error ? error.message : initialError };
   }

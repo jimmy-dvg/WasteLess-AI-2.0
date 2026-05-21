@@ -4,6 +4,7 @@ import Pagination from "@/components/ui/Pagination";
 import AddProductForm from "@/features/inventory/components/AddProductForm";
 import InventoryFilters from "@/features/inventory/components/InventoryFilters";
 import InventoryTable from "@/features/inventory/components/InventoryTable";
+import { getHouseholdPreferencesForUser } from "@/features/household/services/household-preferences.service";
 import { requireUser } from "@/lib/auth";
 import { getInventoryPageData } from "@/services/inventory.service";
 import { inventoryFilterSchema } from "@/validation/inventory";
@@ -37,9 +38,13 @@ export default async function InventoryPage({ searchParams }: InventoryPageProps
   }
 
   let data;
+  let preferences;
 
   try {
-    data = await getInventoryPageData(user.id, parsedFilters.data);
+    [data, preferences] = await Promise.all([
+      getInventoryPageData(user.id, parsedFilters.data),
+      getHouseholdPreferencesForUser(user.id),
+    ]);
   } catch {
     return <ErrorState title="Inventory data is unavailable" />;
   }
@@ -60,7 +65,7 @@ export default async function InventoryPage({ searchParams }: InventoryPageProps
       />
 
       <div id="add-inventory-item">
-        <AddProductForm categories={data.categories} />
+        <AddProductForm categories={data.categories} defaultStorageLocation={preferences.defaultStorageLocation} />
       </div>
 
       <InventoryFilters categories={data.categories} locations={data.locations} filters={parsedFilters.data} />

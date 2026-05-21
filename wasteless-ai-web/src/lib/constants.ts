@@ -1,97 +1,82 @@
-// Site configuration and constants
 export const siteConfig = {
   name: "WasteLessAI",
   description:
     "AI-powered food waste reduction platform helping households save money and reduce waste.",
   url: "https://wastelessai.com",
-  appUrl: "https://app.wastelessai.com",
-  links: {
-    twitter: "https://twitter.com/wastelessai",
-    instagram: "https://instagram.com/wastelessai",
-    linkedin: "https://linkedin.com/company/wastelessai",
-    github: "https://github.com/wastelessai",
-  },
+  appUrl: "/dashboard",
   contact: {
     email: "support@wastelessai.com",
     phone: "+1 (555) WASTE-LESS",
   },
 };
 
-// Navigation links
 export const navigationLinks = [
+  { href: "#quick-access", label: "Quick access" },
   { href: "#features", label: "Features" },
-  { href: "#how-it-works", label: "How It Works" },
+  { href: "#how-it-works", label: "How it works" },
   { href: "#benefits", label: "Benefits" },
-  { href: "/pricing", label: "Pricing" },
-  { href: "/blog", label: "Blog" },
 ];
 
-// Footer links
 export const footerLinks = {
   Product: [
-    { label: "Features", href: "#features" },
-    { label: "Pricing", href: "/pricing" },
-    { label: "Download", href: "/download" },
-    { label: "Security", href: "/security" },
+    { label: "Inventory", href: "/dashboard/inventory" },
+    { label: "Scanner", href: "/dashboard/scanning" },
+    { label: "AI recipes", href: "/dashboard/recipes" },
+    { label: "Meal plan", href: "/dashboard/meal-plan" },
   ],
-  Company: [
-    { label: "About", href: "/about" },
-    { label: "Blog", href: "/blog" },
-    { label: "Careers", href: "/careers" },
-    { label: "Press", href: "/press" },
+  Workflows: [
+    { label: "Shopping list", href: "/dashboard/shopping" },
+    { label: "Waste tracking", href: "/dashboard/waste" },
+    { label: "Household", href: "/dashboard/household" },
+    { label: "Settings", href: "/dashboard/settings" },
   ],
   Legal: [
-    { label: "Privacy Policy", href: "/privacy" },
-    { label: "Terms of Service", href: "/terms" },
-    { label: "Cookie Policy", href: "/cookies" },
-    { label: "Accessibility", href: "/accessibility" },
-  ],
-  Resources: [
-    { label: "Documentation", href: "/docs" },
-    { label: "Help Center", href: "/help" },
-    { label: "Community", href: "/community" },
-    { label: "Contact", href: "/contact" },
+    { label: "Privacy", href: "/privacy" },
+    { label: "Terms", href: "/terms" },
   ],
 };
 
-// Feature definitions
 export const features = [
   {
-    icon: "📦",
-    title: "Pantry Tracking",
+    key: "inventory",
+    title: "Inventory control",
     description:
-      "Add items to your digital pantry instantly. Track what you have, where it is, and when it was purchased.",
+      "Add items to your digital pantry and track what you have, where it is, and when it expires.",
+    href: "/dashboard/inventory",
   },
   {
-    icon: "⏰",
-    title: "Expiration Monitoring",
+    key: "expiration",
+    title: "Expiration monitoring",
     description:
-      "Get smart alerts before items expire. Never miss an expiration date and reduce food waste automatically.",
+      "Use smart alerts and dashboard queues before products pass their best date.",
+    href: "/dashboard",
   },
   {
-    icon: "🤖",
-    title: "AI Recipe Generation",
+    key: "recipes",
+    title: "AI recipe generation",
     description:
-      "Get personalized recipe recommendations based on items in your pantry that are expiring soon.",
+      "Get personalized recipe recommendations based on products that should be used soon.",
+    href: "/dashboard/recipes",
   },
   {
-    icon: "🛒",
-    title: "Shopping Assistance",
+    key: "shopping",
+    title: "Shopping assistance",
     description:
-      "Let AI analyze your pantry and suggest what to buy. Avoid duplicates and optimize your shopping list.",
+      "Build lists around real gaps and avoid duplicate purchases.",
+    href: "/dashboard/shopping",
   },
   {
-    icon: "📊",
-    title: "Waste Analytics",
+    key: "waste",
+    title: "Waste analytics",
     description:
-      "Track your waste patterns and get insights to reduce spending. See how much you've saved and contributed to sustainability.",
+      "Track waste patterns and connect insights back to inventory and meal planning.",
+    href: "/dashboard/waste",
   },
 ];
 
-// Sustainability goals
 export const sustainabilityStats = {
-  activeUsers: "50K+",
-  itemsTracked: "2.5M+",
-  moneySaved: "$10M+",
-  wastePrevented: "5M+ lbs",
+  coreWorkflows: "4",
+  dashboardAreas: "7",
+  scannerInputs: "3",
+  sharedKitchen: "1",
 };

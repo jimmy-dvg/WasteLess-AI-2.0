@@ -1,98 +1,121 @@
-import React from "react";
+import Link from "next/link";
+import {
+  Barcode,
+  BellRing,
+  CalendarClock,
+  ChefHat,
+  ClipboardList,
+  Leaf,
+  ShoppingBasket,
+  type LucideIcon,
+} from "lucide-react";
 import SectionWrapper from "./SectionWrapper";
 
-const features = [
+type Feature = {
+  icon: LucideIcon;
+  title: string;
+  description: string;
+  highlight: string;
+  href: string;
+  action: string;
+};
+
+const features: Feature[] = [
   {
-    icon: "📦",
-    title: "Pantry Tracking",
-    description:
-      "Add items to your digital pantry instantly. Track what you have, where it is, and when it was purchased.",
-    highlight: "Real-time inventory",
+    icon: ClipboardList,
+    title: "Inventory control",
+    description: "Track quantities, storage locations, purchase dates, and expiration dates across the household.",
+    highlight: "Core workflow",
+    href: "/dashboard/inventory",
+    action: "Open inventory",
   },
   {
-    icon: "⏰",
-    title: "Expiration Monitoring",
-    description:
-      "Get smart alerts before items expire. Never miss an expiration date and reduce food waste automatically.",
-    highlight: "Smart notifications",
+    icon: BellRing,
+    title: "Expiration monitoring",
+    description: "Surface use-today and expiring-soon items before they become waste.",
+    highlight: "Smart alerts",
+    href: "/dashboard",
+    action: "View overview",
   },
   {
-    icon: "🤖",
-    title: "AI Recipe Generation",
-    description:
-      "Get personalized recipe recommendations based on items in your pantry that are expiring soon.",
-    highlight: "AI-powered ideas",
+    icon: ChefHat,
+    title: "AI recipe generation",
+    description: "Generate recipes around current inventory, saved preferences, and missing ingredients.",
+    highlight: "AI powered",
+    href: "/dashboard/recipes",
+    action: "Generate recipes",
   },
   {
-    icon: "🛒",
-    title: "Shopping Assistance",
-    description:
-      "Let AI analyze your pantry and suggest what to buy. Avoid duplicates and optimize your shopping list.",
-    highlight: "Smart lists",
+    icon: ShoppingBasket,
+    title: "Shopping assistance",
+    description: "Build lists from missing recipe ingredients and avoid buying what is already at home.",
+    highlight: "Lean lists",
+    href: "/dashboard/shopping",
+    action: "Open shopping",
   },
   {
-    icon: "📊",
-    title: "Waste Analytics",
-    description:
-      "Track your waste patterns and get insights to reduce spending. See how much you've saved and contributed to sustainability.",
-    highlight: "Data-driven insights",
+    icon: CalendarClock,
+    title: "Meal planning",
+    description: "Plan a week of meals that uses urgent inventory first and keeps shopping focused.",
+    highlight: "Weekly planning",
+    href: "/dashboard/meal-plan",
+    action: "Plan meals",
+  },
+  {
+    icon: Barcode,
+    title: "Receipt and barcode scanning",
+    description: "Import products faster from barcodes, receipts, and AI photo recognition.",
+    highlight: "Fast capture",
+    href: "/dashboard/scanning",
+    action: "Open scanner",
+  },
+  {
+    icon: Leaf,
+    title: "Waste analytics",
+    description: "Log discarded products and learn which habits or categories create avoidable loss.",
+    highlight: "Reduce waste",
+    href: "/dashboard/waste",
+    action: "Review waste",
   },
 ];
 
 export default function FeaturesSection() {
   return (
-    <SectionWrapper id="features" dark>
-      {/* Header */}
-      <div className="text-center mb-16 space-y-4">
-        <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold">
-          Powerful Features for Smart Living
-        </h2>
-        <p className="text-lg text-slate-300 max-w-2xl mx-auto">
-          Everything you need to reduce food waste and save money on groceries.
+    <SectionWrapper id="features" dark className="py-16 sm:py-20 lg:py-24">
+      <div className="flex flex-col gap-4 text-center">
+        <p className="text-sm font-bold uppercase tracking-normal text-emerald-300">Product map</p>
+        <h2 className="text-3xl font-bold sm:text-4xl lg:text-5xl">Features that connect into one kitchen flow</h2>
+        <p className="mx-auto max-w-2xl text-base leading-7 text-slate-300">
+          WasteLessAI works best when inventory, recipes, meal planning, shopping, and waste tracking feed each other.
         </p>
       </div>
 
-      {/* Features Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {features.map((feature, index) => (
-          <div
-            key={index}
-            className="group relative p-8 bg-slate-800 hover:bg-slate-700 rounded-2xl transition-all duration-300 border border-slate-700 hover:border-emerald-500 dark:bg-slate-800 dark:border-slate-600"
-          >
-            {/* Accent Line */}
-            <div className="absolute top-0 left-0 w-0 h-1 bg-emerald-500 rounded-full group-hover:w-12 transition-all duration-300"></div>
+      <div className="mt-10 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {features.map((feature) => {
+          const Icon = feature.icon;
 
-            {/* Icon */}
-            <div className="text-5xl mb-4">{feature.icon}</div>
-
-            {/* Content */}
-            <h3 className="text-xl font-bold mb-3">{feature.title}</h3>
-            <p className="text-slate-300 mb-4 leading-relaxed">
-              {feature.description}
-            </p>
-
-            {/* Highlight Badge */}
-            <div className="inline-block">
-              <span className="text-xs font-semibold text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full">
-                ✨ {feature.highlight}
+          return (
+            <Link
+              key={feature.title}
+              href={feature.href}
+              className="group rounded-lg border border-slate-700 bg-slate-800 p-6 transition hover:border-emerald-400 hover:bg-slate-800/80"
+            >
+              <div className="flex items-start justify-between gap-4">
+                <span className="inline-flex h-11 w-11 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-300 ring-1 ring-emerald-400/20">
+                  <Icon className="h-5 w-5" aria-hidden="true" />
+                </span>
+                <span className="rounded-lg bg-slate-900 px-2.5 py-1 text-xs font-bold text-emerald-300 ring-1 ring-slate-700">
+                  {feature.highlight}
+                </span>
+              </div>
+              <h3 className="mt-5 text-xl font-bold text-white">{feature.title}</h3>
+              <p className="mt-3 min-h-20 text-sm leading-6 text-slate-300">{feature.description}</p>
+              <span className="mt-5 inline-flex text-sm font-bold text-emerald-300 group-hover:text-emerald-200">
+                {feature.action}
               </span>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Bottom CTA */}
-      <div className="mt-16 text-center">
-        <p className="text-slate-300 mb-4">
-          All features included in every plan
-        </p>
-        <div className="inline-flex items-center gap-2 text-emerald-400 font-semibold">
-          <span>✓ No limitations</span>
-          <span className="text-slate-500">•</span>
-          <span>✓ Always free</span>
-          <span className="text-slate-500">•</span>
-          <span>✓ Forever updated</span>
-        </div>
+            </Link>
+          );
+        })}
       </div>
     </SectionWrapper>
   );

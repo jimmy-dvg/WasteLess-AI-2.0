@@ -4,6 +4,9 @@ import { getPrimaryHouseholdForUser } from "@/db/queries/households";
 import { requireUser } from "@/lib/auth";
 import { getAiSettingsForUser } from "@/ai/services/ai-settings";
 import AiProviderSettings from "@/features/ai/components/AiProviderSettings";
+import HouseholdSettingsForm from "@/features/household/components/HouseholdSettingsForm";
+import { canManageHousehold } from "@/features/household/constants";
+import { getHouseholdPreferencesForUser } from "@/features/household/services/household-preferences.service";
 
 export const dynamic = "force-dynamic";
 
@@ -11,10 +14,14 @@ export default async function SettingsPage() {
   const user = await requireUser();
   let household;
   let aiSettings;
+  let householdPreferences;
 
   try {
-    household = await getPrimaryHouseholdForUser(user.id);
-    aiSettings = await getAiSettingsForUser(user.id);
+    [household, aiSettings, householdPreferences] = await Promise.all([
+      getPrimaryHouseholdForUser(user.id),
+      getAiSettingsForUser(user.id),
+      getHouseholdPreferencesForUser(user.id),
+    ]);
   } catch {
     return <ErrorState title="Settings data is unavailable" />;
   }
@@ -66,27 +73,10 @@ export default async function SettingsPage() {
         </aside>
       </div>
 
-      <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-        <h2 className="text-lg font-semibold text-slate-950">Household settings</h2>
-        <div className="mt-4 grid gap-3 md:grid-cols-2">
-          <label>
-            <span className="text-xs font-semibold text-slate-600">Default storage location</span>
-            <select className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100">
-              <option>Pantry</option>
-              <option>Fridge</option>
-              <option>Freezer</option>
-            </select>
-          </label>
-          <label>
-            <span className="text-xs font-semibold text-slate-600">Shopping cadence</span>
-            <select className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100">
-              <option>Weekly</option>
-              <option>Every 2 weeks</option>
-              <option>As needed</option>
-            </select>
-          </label>
-        </div>
-      </section>
+      <HouseholdSettingsForm
+        preferences={householdPreferences}
+        canManage={!household || canManageHousehold(household.role)}
+      />
 
       <section className="grid gap-4 md:grid-cols-2">
         <AiProviderSettings initialSettings={aiSettings} />

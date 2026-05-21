@@ -28,7 +28,13 @@ function SubmitButton() {
 
 const locationOptions = ["pantry", "fridge", "freezer", "counter", "cellar", "other"];
 
-export default function AddProductForm({ categories }: { categories: InventoryCategory[] }) {
+export default function AddProductForm({
+  categories,
+  defaultStorageLocation = "pantry",
+}: {
+  categories: InventoryCategory[];
+  defaultStorageLocation?: string;
+}) {
   const [state, formAction] = useActionState(createProductAction, initialState);
   const formRef = useRef<HTMLFormElement>(null);
   const { addToast } = useToast();
@@ -96,6 +102,7 @@ export default function AddProductForm({ categories }: { categories: InventoryCa
           <input
             name="storage_location"
             list="storage-options"
+            defaultValue={defaultStorageLocation}
             placeholder="pantry"
             className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm capitalize outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
           />
