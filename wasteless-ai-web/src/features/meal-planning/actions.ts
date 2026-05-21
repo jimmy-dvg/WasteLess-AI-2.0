@@ -4,6 +4,8 @@ import { ensurePersonalHouseholdForUser } from "@/db/queries/households";
 import { requireUser } from "@/lib/auth";
 import { canEditHouseholdInventory } from "@/features/household/constants";
 import {
+  addRecipeToActiveMealPlanForUser,
+  favoriteMealPlanItemRecipeForUser,
   getMealPlanningPageData,
   markMealPlanItemCookedForUser,
   reopenMealPlanItemForUser,
@@ -27,6 +29,10 @@ const optimizerSchema = z.object({
 
 const mealPlanItemSchema = z.object({
   itemId: z.string().uuid(),
+});
+
+const recipeMealPlanSchema = z.object({
+  recipeId: z.string().uuid(),
 });
 
 function revalidateMealPlanPaths() {
@@ -127,6 +133,82 @@ export async function saveCurrentMealPlanAction(
     return {
       success: false,
       error: error instanceof Error ? error.message : "Unable to save meal plan",
+    };
+  }
+}
+
+export async function addRecipeToMealPlanAction(
+  _prevState: MealPlanActionState,
+  formData: FormData
+): Promise<MealPlanActionState> {
+  const parsed = recipeMealPlanSchema.safeParse(Object.fromEntries(formData.entries()));
+
+  if (!parsed.success) {
+    return {
+      success: false,
+      error: parsed.error.issues[0]?.message ?? "Invalid recipe selection",
+    };
+  }
+
+  try {
+    const user = await requireUser();
+    const household = await ensurePersonalHouseholdForUser(user);
+    const result = await addRecipeToActiveMealPlanForUser(user.id, household.id, parsed.data.recipeId);
+
+    revalidateMealPlanPaths();
+    revalidatePath(`/dashboard/recipes/${parsed.data.recipeId}`);
+
+    if (result.alreadyAdded) {
+      return {
+        success: true,
+        message: `${result.title} is already in ${result.planName}.`,
+      };
+    }
+
+    return {
+      success: true,
+      message: `${result.title} added to ${result.planName}.`,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unable to add recipe to meal plan",
+    };
+  }
+}
+
+export async function favoriteMealPlanItemRecipeAction(
+  _prevState: MealPlanActionState,
+  formData: FormData
+): Promise<MealPlanActionState> {
+  const parsed = mealPlanItemSchema.safeParse(Object.fromEntries(formData.entries()));
+
+  if (!parsed.success) {
+    return {
+      success: false,
+      error: parsed.error.issues[0]?.message ?? "Invalid meal selection",
+    };
+  }
+
+  try {
+    const user = await requireUser();
+    const household = await ensurePersonalHouseholdForUser(user);
+    const result = await favoriteMealPlanItemRecipeForUser(user.id, household.id, parsed.data.itemId);
+
+    revalidateMealPlanPaths();
+    revalidatePath("/dashboard/recipes");
+    revalidatePath(`/dashboard/recipes/${result.recipeId}`);
+
+    return {
+      success: true,
+      message: result.createdRecipe
+        ? `${result.title} saved as a favorite recipe.`
+        : `${result.title} added to favorite recipes.`,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unable to favorite this meal",
     };
   }
 }

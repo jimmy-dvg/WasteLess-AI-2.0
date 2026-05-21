@@ -21,5 +21,12 @@ export default async function RecipesPage() {
   const preferences = await getRecipePreferencesForUser(user.id);
   const aiSettings = await getAiSettingsForUser(user.id);
 
-  return <RecipeRecommendations initialRecipes={recipes} preferences={preferences} aiSettings={aiSettings} />;
+  return (
+    <RecipeRecommendations
+      initialRecipes={recipes}
+      initialFavoriteRecipes={data.favoriteRecipes}
+      preferences={preferences}
+      aiSettings={aiSettings}
+    />
+  );
 }

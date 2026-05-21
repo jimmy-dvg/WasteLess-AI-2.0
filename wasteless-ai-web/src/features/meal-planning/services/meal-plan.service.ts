@@ -61,6 +61,7 @@ type RecipeCandidate = {
   missingItems: RecipeIngredient[];
   priorityItems: string[];
   tags: string[];
+  isSaved: boolean;
 };
 
 export type MealPlanConsumptionSuggestion = {
@@ -109,6 +110,7 @@ export type MealPlanDay = {
   missingItems: RecipeIngredient[];
   consumptionSuggestions: MealPlanConsumptionSuggestion[];
   tags: string[];
+  isSaved: boolean;
 };
 
 export type ShoppingOptimizerItem = {
@@ -172,6 +174,7 @@ export type SavedMealPlanItem = {
   consumptionSuggestions: MealPlanConsumptionSuggestion[];
   cookedAt: Date | null;
   skippedAt: Date | null;
+  isSaved: boolean;
 };
 
 export type SavedMealPlan = {
@@ -694,6 +697,7 @@ function buildRecipeCandidates(
         missingItems,
         priorityItems: expiringIngredients.slice(0, 4),
         tags: recipe.tags,
+        isSaved: recipe.isSaved,
       };
     })
     .filter((candidate) => !excludedTitles.has(normalizeName(candidate.title)))
@@ -752,6 +756,7 @@ function buildFallbackCandidate(
     missingItems: computed.missing,
     priorityItems: [primary.name],
     tags: template.tags,
+    isSaved: false,
   };
 }
 
@@ -804,6 +809,7 @@ function buildPlanDays(
       missingItems: candidate.missingItems.filter((item) => !isPantryStaple(item.name)),
       consumptionSuggestions,
       tags: candidate.tags,
+      isSaved: candidate.isSaved,
     };
   });
 }
@@ -889,7 +895,10 @@ function parseSavedMealStatus(value: string): SavedMealPlanItem["status"] {
   return "planned";
 }
 
-async function getActiveSavedMealPlan(household: UserHousehold | null): Promise<SavedMealPlan | null> {
+async function getActiveSavedMealPlan(
+  userId: string,
+  household: UserHousehold | null
+): Promise<SavedMealPlan | null> {
   if (!household) return null;
 
   const plans = await db
@@ -926,8 +935,16 @@ async function getActiveSavedMealPlan(household: UserHousehold | null): Promise<
       consumptionSuggestions: schema.meal_plan_items.consumption_suggestions,
       cookedAt: schema.meal_plan_items.cooked_at,
       skippedAt: schema.meal_plan_items.skipped_at,
+      savedId: schema.saved_recipes.id,
     })
     .from(schema.meal_plan_items)
+    .leftJoin(
+      schema.saved_recipes,
+      and(
+        eq(schema.saved_recipes.recipe_id, schema.meal_plan_items.recipe_id),
+        eq(schema.saved_recipes.user_id, userId)
+      )
+    )
     .where(eq(schema.meal_plan_items.meal_plan_id, plan.id))
     .orderBy(asc(schema.meal_plan_items.meal_date));
 
@@ -947,6 +964,7 @@ async function getActiveSavedMealPlan(household: UserHousehold | null): Promise<
     consumptionSuggestions: parseConsumptionSuggestions(item.consumptionSuggestions),
     cookedAt: item.cookedAt ?? null,
     skippedAt: item.skippedAt ?? null,
+    isSaved: Boolean(item.savedId),
   }));
 
   const cookedMeals = items.filter((item) => item.status === "cooked").length;
@@ -983,7 +1001,7 @@ export async function getMealPlanningPageData(
     getMealPlanningInventory(userId, household),
     getMealPlanningRecipes(userId, household),
     getShoppingSnapshot(household),
-    getActiveSavedMealPlan(household),
+    getActiveSavedMealPlan(userId, household),
   ]);
   const scanner = await getScannerSignals(userId, inventory);
 
@@ -1110,6 +1128,270 @@ export async function saveCurrentMealPlanForUser(
       id: plan.id,
       itemCount: data.planDays.length,
       name,
+    };
+  });
+}
+
+async function getRecipeForMealPlan(userId: string, householdId: string, recipeId: string) {
+  const rows = await db
+    .select({
+      id: schema.recipes.id,
+      title: schema.recipes.title,
+      description: schema.recipes.description,
+      servings: schema.recipes.servings,
+      cookTime: schema.recipes.cook_time,
+      ingredients: schema.recipes.ingredients,
+      missingIngredients: schema.recipes.missing_ingredients,
+      tags: schema.recipes.tags,
+      score: schema.recipes.score,
+      metadata: schema.recipes.metadata,
+    })
+    .from(schema.recipes)
+    .where(
+      and(
+        eq(schema.recipes.id, recipeId),
+        or(eq(schema.recipes.household_id, householdId), eq(schema.recipes.created_by, userId))!
+      )
+    )
+    .limit(1);
+
+  return rows[0] ?? null;
+}
+
+export async function addRecipeToActiveMealPlanForUser(userId: string, householdId: string, recipeId: string) {
+  const recipe = await getRecipeForMealPlan(userId, householdId, recipeId);
+  if (!recipe) throw new Error("Recipe not found");
+
+  const ingredients = parseIngredients(recipe.ingredients);
+  const missingItems = parseIngredients(recipe.missingIngredients).filter((item) => !isPantryStaple(item.name));
+  const priorityItems = ingredients
+    .filter((ingredient) => ingredient.isExpiring)
+    .map((ingredient) => ingredient.name)
+    .slice(0, 4);
+  const tags = parseJsonValue<string[]>(recipe.tags, []);
+  const metadata = parseJsonValue<Record<string, unknown>>(recipe.metadata, {});
+  const today = startOfDay();
+
+  return db.transaction(async (tx) => {
+    const activePlans = await tx
+      .select({
+        id: schema.meal_plans.id,
+        name: schema.meal_plans.name,
+        startDate: schema.meal_plans.start_date,
+        endDate: schema.meal_plans.end_date,
+      })
+      .from(schema.meal_plans)
+      .where(and(eq(schema.meal_plans.household_id, householdId), eq(schema.meal_plans.status, "active")))
+      .orderBy(desc(schema.meal_plans.updated_at))
+      .limit(1);
+
+    let plan = activePlans[0] ?? null;
+    if (!plan) {
+      const insertedPlans = await tx
+        .insert(schema.meal_plans)
+        .values({
+          household_id: householdId,
+          created_by: userId,
+          name: `Recipe picks ${formatPlanDate(today)}`,
+          status: "active",
+          source: "recipe_cards",
+          start_date: today,
+          end_date: today,
+          snapshot: {
+            generatedAt: new Date().toISOString(),
+            source: "recipe_cards",
+          },
+          stats: {},
+        })
+        .returning({
+          id: schema.meal_plans.id,
+          name: schema.meal_plans.name,
+          startDate: schema.meal_plans.start_date,
+          endDate: schema.meal_plans.end_date,
+        });
+
+      plan = insertedPlans[0] ?? null;
+    }
+
+    if (!plan) throw new Error("Unable to create meal plan");
+
+    const existingItems = await tx
+      .select({ id: schema.meal_plan_items.id })
+      .from(schema.meal_plan_items)
+      .where(and(eq(schema.meal_plan_items.meal_plan_id, plan.id), eq(schema.meal_plan_items.recipe_id, recipe.id)))
+      .limit(1);
+
+    if (existingItems[0]) {
+      return {
+        added: false,
+        alreadyAdded: true,
+        title: recipe.title,
+        planName: plan.name,
+      };
+    }
+
+    const lastItems = await tx
+      .select({ mealDate: schema.meal_plan_items.meal_date })
+      .from(schema.meal_plan_items)
+      .where(eq(schema.meal_plan_items.meal_plan_id, plan.id))
+      .orderBy(desc(schema.meal_plan_items.meal_date))
+      .limit(1);
+
+    const lastDate = lastItems[0]?.mealDate ? startOfDay(lastItems[0].mealDate) : null;
+    const mealDate = lastDate ? addDays(lastDate, 1) : today;
+    const nextEndDate = plan.endDate && plan.endDate > mealDate ? plan.endDate : mealDate;
+
+    await tx.insert(schema.meal_plan_items).values({
+      meal_plan_id: plan.id,
+      recipe_id: recipe.id,
+      meal_date: mealDate,
+      slot: "dinner",
+      title: recipe.title,
+      description: recipe.description ?? "A pantry-friendly meal added from your recipes.",
+      status: "planned",
+      cook_time: recipe.cookTime ?? 25,
+      servings: recipe.servings ?? 2,
+      score: recipe.score != null ? String(recipe.score) : null,
+      priority_items: priorityItems,
+      missing_items: missingItems,
+      consumption_suggestions: [],
+      metadata: {
+        source: String(metadata.source ?? "recipe_card"),
+        tags,
+      },
+    });
+
+    await tx
+      .update(schema.meal_plans)
+      .set({
+        end_date: nextEndDate,
+        updated_at: new Date(),
+      })
+      .where(eq(schema.meal_plans.id, plan.id));
+
+    return {
+      added: true,
+      alreadyAdded: false,
+      title: recipe.title,
+      planName: plan.name,
+    };
+  });
+}
+
+function buildMealPlanItemIngredients(priorityItems: string[], missingItems: RecipeIngredient[]) {
+  const map = new Map<string, RecipeIngredient>();
+
+  priorityItems.forEach((name) => {
+    const key = normalizeName(name);
+    if (key && !map.has(key)) map.set(key, { name, isExpiring: true });
+  });
+
+  missingItems.forEach((item) => {
+    const key = normalizeName(item.name);
+    if (key && !map.has(key)) map.set(key, item);
+  });
+
+  return Array.from(map.values());
+}
+
+export async function favoriteMealPlanItemRecipeForUser(
+  userId: string,
+  householdId: string,
+  itemId: string
+) {
+  return db.transaction(async (tx) => {
+    const rows = await tx
+      .select({
+        id: schema.meal_plan_items.id,
+        recipeId: schema.meal_plan_items.recipe_id,
+        title: schema.meal_plan_items.title,
+        description: schema.meal_plan_items.description,
+        cookTime: schema.meal_plan_items.cook_time,
+        servings: schema.meal_plan_items.servings,
+        score: schema.meal_plan_items.score,
+        priorityItems: schema.meal_plan_items.priority_items,
+        missingItems: schema.meal_plan_items.missing_items,
+        metadata: schema.meal_plan_items.metadata,
+        planId: schema.meal_plans.id,
+      })
+      .from(schema.meal_plan_items)
+      .innerJoin(schema.meal_plans, eq(schema.meal_plan_items.meal_plan_id, schema.meal_plans.id))
+      .where(and(eq(schema.meal_plan_items.id, itemId), eq(schema.meal_plans.household_id, householdId)))
+      .limit(1);
+
+    const item = rows[0];
+    if (!item) throw new Error("Meal plan item was not found");
+
+    let recipeId = item.recipeId;
+    let createdRecipe = false;
+
+    if (!recipeId) {
+      const priorityItems = parseJsonValue<string[]>(item.priorityItems, []);
+      const missingItems = parseIngredients(item.missingItems);
+      const metadata = parseJsonValue<Record<string, unknown>>(item.metadata, {});
+      const tags = parseJsonValue<string[]>(metadata.tags, ["meal plan"]);
+      const ingredients = buildMealPlanItemIngredients(priorityItems, missingItems);
+
+      const insertedRecipes = await tx
+        .insert(schema.recipes)
+        .values({
+          household_id: householdId,
+          created_by: userId,
+          title: item.title,
+          description: item.description ?? "A meal plan pick built from your current inventory.",
+          difficulty: "easy",
+          servings: item.servings ?? 2,
+          cook_time: item.cookTime ?? 25,
+          ingredients: ingredients.length > 0 ? ingredients : [{ name: item.title }],
+          missing_ingredients: missingItems,
+          nutrition: {
+            calories_kcal: 0,
+            protein_g: 0,
+            carbs_g: 0,
+            fat_g: 0,
+          },
+          instructions: [
+            "Review the ingredients and prep anything that is close to expiring.",
+            "Cook the main ingredients until tender and season as you go.",
+            "Serve the meal while noting anything that should be adjusted next time.",
+          ].join("\n"),
+          waste_notes:
+            "Saved from the meal plan to help reuse current household inventory before it goes unused.",
+          tags,
+          score: item.score != null ? String(item.score) : null,
+          metadata: {
+            source: "meal_plan",
+            meal_plan_item_id: item.id,
+            meal_plan_id: item.planId,
+          },
+        })
+        .returning({ id: schema.recipes.id });
+
+      recipeId = insertedRecipes[0]?.id ?? null;
+      if (!recipeId) throw new Error("Unable to create recipe from meal plan item");
+      createdRecipe = true;
+
+      await tx
+        .update(schema.meal_plan_items)
+        .set({
+          recipe_id: recipeId,
+          updated_at: new Date(),
+        })
+        .where(eq(schema.meal_plan_items.id, item.id));
+    }
+
+    await tx
+      .insert(schema.saved_recipes)
+      .values({
+        recipe_id: recipeId,
+        user_id: userId,
+      })
+      .onConflictDoNothing();
+
+    return {
+      title: item.title,
+      recipeId,
+      createdRecipe,
     };
   });
 }

@@ -68,6 +68,7 @@ export type RecipeListItem = {
   difficulty: RecipeDifficulty;
   ingredients: RecipeIngredient[];
   missingIngredients: RecipeIngredient[];
+  nutrition: RecipeNutrition;
   tags: string[];
   source: string;
   isSaved: boolean;

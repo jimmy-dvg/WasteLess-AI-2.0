@@ -230,12 +230,19 @@ function buildRecipeListItem(recipe: {
   difficulty: string | null;
   ingredients: unknown;
   missing_ingredients: unknown;
+  nutrition: unknown;
   tags: unknown;
   metadata: unknown;
   score: string | number | null;
 }) : RecipeListItem {
   const ingredients = parseJsonValue<RecipeIngredient[]>(recipe.ingredients, []);
   const missingIngredients = parseJsonValue<RecipeIngredient[]>(recipe.missing_ingredients, []);
+  const nutrition = parseJsonValue<RecipeListItem["nutrition"]>(recipe.nutrition, {
+    calories_kcal: 0,
+    protein_g: 0,
+    carbs_g: 0,
+    fat_g: 0,
+  });
   const tags = parseJsonValue<string[]>(recipe.tags, []);
   const metadata = parseJsonValue<Record<string, unknown>>(recipe.metadata, {});
 
@@ -248,6 +255,7 @@ function buildRecipeListItem(recipe: {
     difficulty: (recipe.difficulty as RecipeListItem["difficulty"]) ?? "easy",
     ingredients,
     missingIngredients,
+    nutrition,
     tags,
     source: String(metadata.source ?? "ai_generated"),
     isSaved: false,
@@ -425,6 +433,7 @@ export async function generateRecipesForUser(options: {
       difficulty: schema.recipes.difficulty,
       ingredients: schema.recipes.ingredients,
       missing_ingredients: schema.recipes.missing_ingredients,
+      nutrition: schema.recipes.nutrition,
       tags: schema.recipes.tags,
       metadata: schema.recipes.metadata,
       score: schema.recipes.score,

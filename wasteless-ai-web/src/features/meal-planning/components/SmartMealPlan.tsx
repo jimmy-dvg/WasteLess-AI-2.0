@@ -9,8 +9,12 @@ import type {
 import { formatDate } from "@/lib/dashboard-utils";
 import Link from "next/link";
 import AddOptimizedShoppingButton from "./AddOptimizedShoppingButton";
+import FavoriteMealPlanRecipeButton from "./FavoriteMealPlanRecipeButton";
 import MealPlanItemActions from "./MealPlanItemActions";
+import MealPlanRecipeButton from "./MealPlanRecipeButton";
 import SaveMealPlanButton from "./SaveMealPlanButton";
+import SaveRecipeButton from "@/features/recipes/components/SaveRecipeButton";
+import type { RecipeDetail, RecipeIngredient, RecipeListItem } from "@/types/recipes";
 
 type SmartMealPlanProps = {
   data: MealPlanningData;
@@ -30,6 +34,79 @@ const mealStatusStyles: Record<SavedMealPlanItem["status"], string> = {
 
 function formatSource(source: string) {
   return source.replace(/_/g, " ");
+}
+
+function toMealPlanRecipePreview(input: {
+  id: string;
+  title: string;
+  description: string | null;
+  cookTime: number | null;
+  servings: number | null;
+  score: number | null;
+  priorityItems: string[];
+  missingItems: RecipeIngredient[];
+  tags?: string[];
+}): RecipeDetail {
+  const ingredientMap = new Map<string, RecipeIngredient>();
+
+  input.priorityItems.forEach((name) => {
+    const key = name.toLowerCase();
+    if (!ingredientMap.has(key)) ingredientMap.set(key, { name, isExpiring: true });
+  });
+
+  input.missingItems.forEach((item) => {
+    const key = item.name.toLowerCase();
+    if (!ingredientMap.has(key)) ingredientMap.set(key, item);
+  });
+
+  const ingredients = Array.from(ingredientMap.values());
+
+  return {
+    id: `meal-plan-${input.id}`,
+    title: input.title,
+    description: input.description ?? "A meal plan pick built from your current inventory and saved recipes.",
+    servings: input.servings ?? 2,
+    cookTime: input.cookTime ?? 25,
+    difficulty: "easy",
+    ingredients: ingredients.length > 0 ? ingredients : [{ name: input.title }],
+    missingIngredients: input.missingItems,
+    nutrition: {
+      calories_kcal: 0,
+      protein_g: 0,
+      carbs_g: 0,
+      fat_g: 0,
+    },
+    tags: input.tags ?? ["meal plan"],
+    source: "meal_plan",
+    isSaved: false,
+    score: input.score,
+    steps: [
+      "Review the ingredients and prep anything that is close to expiring.",
+      "Cook the main ingredients until tender and season as you go.",
+      "Serve the meal while noting anything that should be adjusted next time.",
+    ],
+    wasteReductionNote: "This meal was selected to help use current household inventory before it goes unused.",
+    pantryStaples: [],
+    summary: null,
+  };
+}
+
+function toRecipeListItem(recipe: RecipeDetail): RecipeListItem {
+  return {
+    id: recipe.id,
+    title: recipe.title,
+    description: recipe.description,
+    servings: recipe.servings,
+    cookTime: recipe.cookTime,
+    difficulty: recipe.difficulty,
+    ingredients: recipe.ingredients,
+    missingIngredients: recipe.missingIngredients,
+    nutrition: recipe.nutrition,
+    tags: recipe.tags,
+    source: recipe.source,
+    isSaved: recipe.isSaved,
+    score: recipe.score,
+  };
 }
 
 function buildMealPlanUrl(data: MealPlanningData, nextExcludedTitle?: string) {
@@ -75,46 +152,68 @@ function SavedPlanPanel({ data }: { data: MealPlanningData }) {
       </div>
 
       <div className="divide-y divide-slate-100">
-        {savedPlan.items.map((item) => (
-          <article key={item.id} className="p-5">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <p className="text-xs font-semibold uppercase tracking-normal text-slate-500">{item.dateLabel}</p>
-                  <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ${mealStatusStyles[item.status]}`}>
-                    {item.status}
-                  </span>
-                </div>
-                {item.recipeId ? (
-                  <Link
-                    href={`/dashboard/recipes/${item.recipeId}`}
-                    className="mt-2 block text-base font-bold text-slate-950 hover:text-emerald-700"
+        {savedPlan.items.map((item) => {
+          const previewRecipe = toMealPlanRecipePreview({
+            id: item.id,
+            title: item.title,
+            description: item.description,
+            cookTime: item.cookTime,
+            servings: item.servings,
+            score: item.score,
+            priorityItems: item.priorityItems,
+            missingItems: item.missingItems,
+          });
+
+          return (
+            <article key={item.id} className="p-5">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-xs font-semibold uppercase tracking-normal text-slate-500">{item.dateLabel}</p>
+                    <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ${mealStatusStyles[item.status]}`}>
+                      {item.status}
+                    </span>
+                  </div>
+                  <MealPlanRecipeButton
+                    recipeId={item.recipeId}
+                    title={item.title}
+                    fallbackRecipe={previewRecipe}
+                    className="mt-2 block cursor-pointer text-left text-base font-bold text-slate-950 hover:text-emerald-700"
                   >
                     {item.title}
-                  </Link>
-                ) : (
-                  <h3 className="mt-2 text-base font-bold text-slate-950">{item.title}</h3>
-                )}
-                {item.description ? <p className="mt-2 text-sm leading-6 text-slate-600">{item.description}</p> : null}
+                  </MealPlanRecipeButton>
+                  {item.description ? <p className="mt-2 text-sm leading-6 text-slate-600">{item.description}</p> : null}
+                </div>
+                <div className="flex shrink-0 flex-wrap gap-2">
+                  <MealPlanRecipeButton
+                    recipeId={item.recipeId}
+                    title={item.title}
+                    fallbackRecipe={previewRecipe}
+                    className="rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700"
+                  >
+                    View recipe
+                  </MealPlanRecipeButton>
+                  <FavoriteMealPlanRecipeButton itemId={item.id} initialFavorited={item.isSaved} />
+                  <MealPlanItemActions itemId={item.id} status={item.status} />
+                </div>
               </div>
-              <MealPlanItemActions itemId={item.id} status={item.status} />
-            </div>
 
-            {item.consumptionSuggestions.length > 0 ? (
-              <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
-                <p className="text-xs font-semibold uppercase tracking-normal text-slate-500">Inventory updates on cooked</p>
-                <ul className="mt-3 grid gap-2 text-sm text-slate-700 md:grid-cols-2">
-                  {item.consumptionSuggestions.slice(0, 4).map((suggestion) => (
-                    <li key={`${item.id}-${suggestion.productId}`}>
-                      {suggestion.name}: {suggestion.currentQuantity} to {suggestion.nextQuantity}
-                      {suggestion.unit ? ` ${suggestion.unit}` : ""}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ) : null}
-          </article>
-        ))}
+              {item.consumptionSuggestions.length > 0 ? (
+                <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-normal text-slate-500">Inventory updates on cooked</p>
+                  <ul className="mt-3 grid gap-2 text-sm text-slate-700 md:grid-cols-2">
+                    {item.consumptionSuggestions.slice(0, 4).map((suggestion) => (
+                      <li key={`${item.id}-${suggestion.productId}`}>
+                        {suggestion.name}: {suggestion.currentQuantity} to {suggestion.nextQuantity}
+                        {suggestion.unit ? ` ${suggestion.unit}` : ""}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+            </article>
+          );
+        })}
       </div>
     </section>
   );
@@ -175,26 +274,37 @@ export default function SmartMealPlan({ data }: SmartMealPlanProps) {
             />
           ) : null}
 
-          {data.planDays.map((day) => (
-            <article
-              key={day.id}
-              className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm transition hover:border-emerald-200 hover:shadow-md"
-            >
+          {data.planDays.map((day) => {
+            const previewRecipe = toMealPlanRecipePreview({
+              id: day.id,
+              title: day.title,
+              description: day.description,
+              cookTime: day.cookTime,
+              servings: day.servings,
+              score: day.score,
+              priorityItems: day.priorityItems,
+              missingItems: day.missingItems,
+              tags: day.tags,
+            });
+
+            return (
+              <article
+                key={day.id}
+                className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm transition hover:border-emerald-200 hover:shadow-md"
+              >
               <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                 <div className="min-w-0">
                   <p className="text-xs font-semibold uppercase tracking-normal text-emerald-700">
                     {day.dateLabel} - {formatSource(day.source)}
                   </p>
-                  {day.recipeId ? (
-                    <Link
-                      href={`/dashboard/recipes/${day.recipeId}`}
-                      className="mt-2 block text-lg font-bold text-slate-950 hover:text-emerald-700"
-                    >
-                      {day.title}
-                    </Link>
-                  ) : (
-                    <h2 className="mt-2 text-lg font-bold text-slate-950">{day.title}</h2>
-                  )}
+                  <MealPlanRecipeButton
+                    recipeId={day.recipeId}
+                    title={day.title}
+                    fallbackRecipe={previewRecipe}
+                    className="mt-2 block cursor-pointer text-left text-lg font-bold text-slate-950 hover:text-emerald-700"
+                  >
+                    {day.title}
+                  </MealPlanRecipeButton>
                   <p className="mt-2 text-sm leading-6 text-slate-600">{day.description}</p>
                 </div>
                 <div className="flex shrink-0 flex-wrap gap-2 text-xs font-semibold">
@@ -261,17 +371,23 @@ export default function SmartMealPlan({ data }: SmartMealPlanProps) {
                 >
                   Try another
                 </Link>
-                {day.recipeId ? (
-                  <Link
-                    href={`/dashboard/recipes/${day.recipeId}`}
-                    className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700"
-                  >
-                    View recipe
-                  </Link>
-                ) : null}
+                <MealPlanRecipeButton
+                  recipeId={day.recipeId}
+                  title={day.title}
+                  fallbackRecipe={previewRecipe}
+                  className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700"
+                >
+                  View recipe
+                </MealPlanRecipeButton>
+                <SaveRecipeButton
+                  recipeId={day.recipeId ?? previewRecipe.id}
+                  initialSaved={day.isSaved}
+                  recipeSnapshot={day.recipeId ? undefined : toRecipeListItem(previewRecipe)}
+                />
               </div>
             </article>
-          ))}
+            );
+          })}
         </section>
 
         <aside className="space-y-6">

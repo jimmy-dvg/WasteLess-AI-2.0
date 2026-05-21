@@ -8,6 +8,7 @@ import { ensurePersonalHouseholdForUser } from "@/db/queries/households";
 import { getRecipeDetail } from "@/db/queries/recipes";
 import { toggleSavedRecipe, updateRecipePreferences } from "@/services/recipes.service";
 import { recipePreferencesSchema } from "@/validation/recipes";
+import type { RecipeListItem } from "@/types/recipes";
 import { revalidatePath } from "next/cache";
 import { and, eq } from "drizzle-orm";
 
@@ -16,6 +17,52 @@ export type RecipeActionState = {
   message?: string | null;
   error?: string | null;
 };
+
+const recipeSnapshotSchema = z.object({
+  id: z.string().min(1),
+  title: z.string().trim().min(3).max(160),
+  description: z.string().trim().min(3).max(500),
+  servings: z.number().int().min(1).max(24),
+  cookTime: z.number().int().min(1).max(300),
+  difficulty: z.enum(["easy", "medium", "hard"]),
+  ingredients: z
+    .array(
+      z.object({
+        name: z.string().trim().min(1).max(160),
+        quantity: z.string().trim().max(64).optional(),
+        unit: z.string().trim().max(64).optional(),
+        notes: z.string().trim().max(160).optional(),
+        isOptional: z.boolean().optional(),
+        isExpiring: z.boolean().optional(),
+      })
+    )
+    .default([]),
+  missingIngredients: z
+    .array(
+      z.object({
+        name: z.string().trim().min(1).max(160),
+        quantity: z.string().trim().max(64).optional(),
+        unit: z.string().trim().max(64).optional(),
+        notes: z.string().trim().max(160).optional(),
+        isOptional: z.boolean().optional(),
+        isExpiring: z.boolean().optional(),
+      })
+    )
+    .default([]),
+  nutrition: z.object({
+    calories_kcal: z.number().min(0).max(5000),
+    protein_g: z.number().min(0).max(500),
+    carbs_g: z.number().min(0).max(800),
+    fat_g: z.number().min(0).max(500),
+    fiber_g: z.number().min(0).max(300).optional(),
+    sugar_g: z.number().min(0).max(500).optional(),
+    sodium_mg: z.number().min(0).max(20000).optional(),
+  }),
+  tags: z.array(z.string().trim().min(1).max(40)).max(12).default([]),
+  source: z.string().trim().min(1).max(80),
+  isSaved: z.boolean(),
+  score: z.number().nullable(),
+});
 
 function parseList(value: FormDataEntryValue | null) {
   if (!value) return [];
@@ -56,20 +103,90 @@ export async function updateRecipePreferencesAction(
 }
 
 export async function toggleSavedRecipeAction(recipeId: string): Promise<RecipeActionState & { saved?: boolean }> {
+  const parsedRecipeId = z.string().uuid().safeParse(recipeId);
+  if (!parsedRecipeId.success) {
+    return { success: false, error: "Only generated recipes can be saved." };
+  }
+
   const user = await requireUser();
-  const recipe = await getRecipeDetail(user.id, recipeId);
+  const recipe = await getRecipeDetail(user.id, parsedRecipeId.data);
   if (!recipe) {
     return { success: false, error: "Recipe not found" };
   }
 
-  const result = await toggleSavedRecipe(user.id, recipeId);
+  const result = await toggleSavedRecipe(user.id, parsedRecipeId.data);
   revalidatePath("/dashboard/recipes");
-  revalidatePath(`/dashboard/recipes/${recipeId}`);
+  revalidatePath(`/dashboard/recipes/${parsedRecipeId.data}`);
 
   return {
     success: true,
     message: result.saved ? "Recipe saved." : "Recipe removed from favorites.",
     saved: result.saved,
+  };
+}
+
+export async function saveRecipeSnapshotAsFavoriteAction(
+  snapshot: RecipeListItem
+): Promise<RecipeActionState & { saved?: boolean; recipe?: RecipeListItem }> {
+  const parsed = recipeSnapshotSchema.safeParse(snapshot);
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.issues[0]?.message ?? "Invalid recipe" };
+  }
+
+  const user = await requireUser();
+  const household = await ensurePersonalHouseholdForUser(user);
+  const recipe = parsed.data;
+
+  const inserted = await db
+    .insert(schema.recipes)
+    .values({
+      household_id: household.id,
+      created_by: user.id,
+      title: recipe.title,
+      description: recipe.description,
+      difficulty: recipe.difficulty,
+      servings: recipe.servings,
+      cook_time: recipe.cookTime,
+      ingredients: recipe.ingredients,
+      missing_ingredients: recipe.missingIngredients,
+      nutrition: recipe.nutrition,
+      instructions: [
+        "Review the ingredients and prep anything that is close to expiring.",
+        "Cook the main ingredients until tender and season as you go.",
+        "Serve while warm and note any useful adjustments for next time.",
+      ].join("\n"),
+      waste_notes: "Saved from a recipe card to help reduce household food waste.",
+      tags: recipe.tags,
+      score: recipe.score != null ? String(recipe.score) : null,
+      metadata: {
+        source: recipe.source,
+        original_id: recipe.id,
+      },
+    })
+    .returning({ id: schema.recipes.id });
+
+  const savedRecipeId = inserted[0]?.id;
+  if (!savedRecipeId) {
+    return { success: false, error: "Unable to save recipe" };
+  }
+
+  await db
+    .insert(schema.saved_recipes)
+    .values({ recipe_id: savedRecipeId, user_id: user.id })
+    .onConflictDoNothing();
+
+  revalidatePath("/dashboard/recipes");
+  revalidatePath(`/dashboard/recipes/${savedRecipeId}`);
+
+  return {
+    success: true,
+    message: "Recipe saved to favorites.",
+    saved: true,
+    recipe: {
+      ...recipe,
+      id: savedRecipeId,
+      isSaved: true,
+    },
   };
 }
 

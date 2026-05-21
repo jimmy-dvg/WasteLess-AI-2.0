@@ -1,17 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import PageHeader from "@/components/dashboard/PageHeader";
 import EmptyState from "@/components/dashboard/EmptyState";
 import { useToast } from "@/components/ui/Toast";
 import RecipeCard from "@/features/recipes/components/RecipeCard";
 import RecipeCardSkeleton from "@/features/recipes/components/RecipeCardSkeleton";
+import RecipeDetailModal from "@/features/recipes/components/RecipeDetailModal";
 import RecipePreferencesForm from "@/features/recipes/components/RecipePreferencesForm";
-import type { RecipeListItem, RecipePreferences } from "@/types/recipes";
+import type { RecipeDetail, RecipeListItem, RecipePreferences } from "@/types/recipes";
 import type { AiSettings } from "@/ai/types";
 
 type RecipeRecommendationsProps = {
   initialRecipes: RecipeListItem[];
+  initialFavoriteRecipes: RecipeListItem[];
   preferences: RecipePreferences;
   aiSettings: AiSettings;
 };
@@ -21,6 +23,12 @@ type RecipeGenerationResponse = {
   summary?: string | null;
   pantryStaples?: string[];
   cached?: boolean;
+};
+
+type RecipeDetailResponse = {
+  success: boolean;
+  data?: RecipeDetail;
+  error?: string;
 };
 
 function parseSseEvent(chunk: string) {
@@ -47,8 +55,14 @@ function parseSseEvent(chunk: string) {
   }
 }
 
-export default function RecipeRecommendations({ initialRecipes, preferences, aiSettings }: RecipeRecommendationsProps) {
+export default function RecipeRecommendations({
+  initialRecipes,
+  initialFavoriteRecipes,
+  preferences,
+  aiSettings,
+}: RecipeRecommendationsProps) {
   const [recipes, setRecipes] = useState<RecipeListItem[]>(initialRecipes);
+  const [favoriteRecipes, setFavoriteRecipes] = useState<RecipeListItem[]>(initialFavoriteRecipes);
   const [isGenerating, setIsGenerating] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [includeExpired, setIncludeExpired] = useState(false);
@@ -57,7 +71,76 @@ export default function RecipeRecommendations({ initialRecipes, preferences, aiS
   const [summary, setSummary] = useState<string | null>(null);
   const [pantryStaples, setPantryStaples] = useState<string[]>([]);
   const [streamPreview, setStreamPreview] = useState<string>("");
+  const [selectedRecipeId, setSelectedRecipeId] = useState<string | null>(null);
+  const [selectedRecipeTitle, setSelectedRecipeTitle] = useState<string | null>(null);
+  const [recipeDetailsById, setRecipeDetailsById] = useState<Record<string, RecipeDetail>>({});
+  const [isDetailLoading, setIsDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState<string | null>(null);
   const { addToast } = useToast();
+  const selectedRecipe = selectedRecipeId ? recipeDetailsById[selectedRecipeId] ?? null : null;
+
+  useEffect(() => {
+    if (!selectedRecipeId || recipeDetailsById[selectedRecipeId]) return;
+
+    const controller = new AbortController();
+
+    const loadRecipeDetail = async () => {
+      setIsDetailLoading(true);
+      setDetailError(null);
+
+      try {
+        const response = await fetch(`/api/recipes/${encodeURIComponent(selectedRecipeId)}`, {
+          signal: controller.signal,
+        });
+        const payload = (await response.json()) as RecipeDetailResponse;
+
+        if (!response.ok || !payload.success || !payload.data) {
+          throw new Error(payload.error || "Recipe details failed to load");
+        }
+
+        setRecipeDetailsById((current) => ({ ...current, [selectedRecipeId]: payload.data as RecipeDetail }));
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+        setDetailError(error instanceof Error ? error.message : "Recipe details failed to load");
+      } finally {
+        setIsDetailLoading(false);
+      }
+    };
+
+    void loadRecipeDetail();
+
+    return () => controller.abort();
+  }, [recipeDetailsById, selectedRecipeId]);
+
+  const handleOpenRecipe = useCallback((recipe: Pick<RecipeListItem, "id" | "title">) => {
+    setSelectedRecipeId(recipe.id);
+    setSelectedRecipeTitle(recipe.title);
+    setDetailError(null);
+  }, []);
+
+  const handleCloseRecipe = useCallback(() => {
+    setSelectedRecipeId(null);
+    setSelectedRecipeTitle(null);
+    setDetailError(null);
+  }, []);
+
+  const handleFavoriteChange = useCallback(
+    (recipe: RecipeListItem, saved: boolean, savedRecipe?: RecipeListItem) => {
+      const nextRecipe = { ...(savedRecipe ?? recipe), isSaved: saved };
+
+      setRecipes((current) =>
+        current.map((item) => (item.id === recipe.id ? { ...nextRecipe } : item))
+      );
+      setFavoriteRecipes((current) => {
+        if (!saved) return current.filter((item) => item.id !== recipe.id && item.id !== nextRecipe.id);
+        if (current.some((item) => item.id === nextRecipe.id || item.id === recipe.id)) {
+          return current.map((item) => (item.id === nextRecipe.id || item.id === recipe.id ? nextRecipe : item));
+        }
+        return [nextRecipe, ...current].slice(0, 8);
+      });
+    },
+    []
+  );
 
   const handleGenerate = async () => {
     setIsGenerating(true);
@@ -242,6 +325,33 @@ export default function RecipeRecommendations({ initialRecipes, preferences, aiS
         </div>
       ) : null}
 
+      <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-normal text-emerald-700">Favorites</p>
+            <h2 className="text-lg font-bold text-slate-950">Favorite recipes</h2>
+          </div>
+          <p className="text-sm text-slate-500">{favoriteRecipes.length} saved</p>
+        </div>
+
+        {favoriteRecipes.length === 0 ? (
+          <div className="mt-4 rounded-lg border border-dashed border-slate-200 bg-slate-50 px-4 py-5 text-sm text-slate-600">
+            Mark a recipe as favorite and it will appear here for quicker meal planning.
+          </div>
+        ) : (
+          <div className="mt-4 grid gap-4 md:grid-cols-2">
+            {favoriteRecipes.map((recipe) => (
+              <RecipeCard
+                key={`favorite-${recipe.id}`}
+                recipe={recipe}
+                onOpen={handleOpenRecipe}
+                onFavoriteChange={handleFavoriteChange}
+              />
+            ))}
+          </div>
+        )}
+      </section>
+
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.5fr)_minmax(320px,0.8fr)]">
         <div className="space-y-4">
           {pantryStaples.length > 0 ? (
@@ -278,6 +388,8 @@ export default function RecipeRecommendations({ initialRecipes, preferences, aiS
                   key={recipe.id}
                   recipe={recipe}
                   isRegenerating={regeneratingRecipeId === recipe.id}
+                  onOpen={handleOpenRecipe}
+                  onFavoriteChange={handleFavoriteChange}
                   onRegenerate={handleRegenerateRecipe}
                 />
               ))}
@@ -287,6 +399,15 @@ export default function RecipeRecommendations({ initialRecipes, preferences, aiS
 
         <RecipePreferencesForm initialPreferences={preferences} />
       </div>
+
+      <RecipeDetailModal
+        open={Boolean(selectedRecipeId)}
+        recipe={selectedRecipe}
+        title={selectedRecipeTitle}
+        isLoading={isDetailLoading}
+        error={detailError}
+        onClose={handleCloseRecipe}
+      />
     </div>
   );
 }
