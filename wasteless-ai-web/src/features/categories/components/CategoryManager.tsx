@@ -17,6 +17,7 @@ import {
   createCategoryAction,
   createRecommendedCategoriesAction,
   deleteCategoryAction,
+  organizeExistingInventoryAction,
   updateCategoryAction,
   type InventoryActionState,
 } from "@/features/inventory/actions";
@@ -124,12 +125,16 @@ function TaxonomyOverview({
   categories,
   missingRecommendedCount,
   isCreatingRecommended,
+  isOrganizingExisting,
   onCreateRecommended,
+  onOrganizeExisting,
 }: {
   categories: InventoryCategory[];
   missingRecommendedCount: number;
   isCreatingRecommended: boolean;
+  isOrganizingExisting: boolean;
   onCreateRecommended: () => void;
+  onOrganizeExisting: () => void;
 }) {
   const categoryByName = useMemo(() => {
     return new Map(categories.map((category) => [normalizeTaxonomyName(category.name), category]));
@@ -148,23 +153,34 @@ function TaxonomyOverview({
               A compact category set for household food and product inventory.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={onCreateRecommended}
-            disabled={isCreatingRecommended || missingRecommendedCount === 0}
-            className="inline-flex items-center justify-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {missingRecommendedCount === 0 ? (
-              <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
-            ) : (
-              <Plus className="h-4 w-4" aria-hidden="true" />
-            )}
-            {missingRecommendedCount === 0
-              ? "Set ready"
-              : isCreatingRecommended
-                ? "Adding..."
-                : `Add ${missingRecommendedCount}`}
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={onOrganizeExisting}
+              disabled={isOrganizingExisting}
+              className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <Sparkles className="h-4 w-4" aria-hidden="true" />
+              {isOrganizingExisting ? "Organizing..." : "Organize items"}
+            </button>
+            <button
+              type="button"
+              onClick={onCreateRecommended}
+              disabled={isCreatingRecommended || missingRecommendedCount === 0}
+              className="inline-flex items-center justify-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {missingRecommendedCount === 0 ? (
+                <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
+              ) : (
+                <Plus className="h-4 w-4" aria-hidden="true" />
+              )}
+              {missingRecommendedCount === 0
+                ? "Set ready"
+                : isCreatingRecommended
+                  ? "Adding..."
+                  : `Add ${missingRecommendedCount}`}
+            </button>
+          </div>
         </div>
 
         <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
@@ -266,6 +282,7 @@ export default function CategoryManager({ categories }: { categories: InventoryC
   const { addToast } = useToast();
   const formRef = useRef<HTMLFormElement>(null);
   const [isCreatingRecommended, startCreatingRecommended] = useTransition();
+  const [isOrganizingExisting, startOrganizingExisting] = useTransition();
 
   const missingRecommendedCount = useMemo(() => {
     const existingNames = new Set(categories.map((category) => normalizeTaxonomyName(category.name)));
@@ -293,13 +310,26 @@ export default function CategoryManager({ categories }: { categories: InventoryC
     });
   };
 
+  const handleOrganizeExisting = () => {
+    startOrganizingExisting(async () => {
+      const result = await organizeExistingInventoryAction();
+      if (!result.success) {
+        addToast(result.error ?? "Unable to organize existing items", "error");
+        return;
+      }
+      if (result.message) addToast(result.message, "success");
+    });
+  };
+
   return (
     <div className="space-y-5">
       <TaxonomyOverview
         categories={categories}
         missingRecommendedCount={missingRecommendedCount}
         isCreatingRecommended={isCreatingRecommended}
+        isOrganizingExisting={isOrganizingExisting}
         onCreateRecommended={handleCreateRecommended}
+        onOrganizeExisting={handleOrganizeExisting}
       />
 
       <StorageSuggestionTool />

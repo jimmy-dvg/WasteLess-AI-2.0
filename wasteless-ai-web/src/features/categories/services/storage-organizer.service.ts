@@ -56,7 +56,35 @@ const ORGANIZER_RULES: OrganizerRule[] = [
     reason: "Fresh meat and fish need cold storage and should be used quickly.",
   },
   {
-    pattern: /ориз|rice|pasta|паста|спагети|oats|овес|flour|брашно|cereal|булгур|киноа|bread|хляб/i,
+    pattern: /egg|eggs|яйце|яйца/i,
+    category: "млечни",
+    storageZone: "хладилник",
+    confidence: 0.84,
+    reason: "Eggs are stored with chilled dairy staples in most household inventories.",
+  },
+  {
+    pattern: /green beans|bell pepper|pepper|broccoli|romanesco|corn|cucumber|radish|cabbage|bok choy|carrot|tomato|avocado|spinach|lettuce|sauerkraut|kimchi|beans?|чушка|броколи|царевица|крастав|репич|зеле/i,
+    category: "зеленчуци",
+    storageZone: "хладилник",
+    confidence: 0.84,
+    reason: "Fresh vegetables and fermented vegetable products are best grouped as vegetables.",
+  },
+  {
+    pattern: /wheat berries|chia seeds|pistachios|nuts|dark chocolate|chocolate/i,
+    category: "зърнени",
+    storageZone: "шкаф",
+    confidence: 0.84,
+    reason: "Dry seeds, nuts, and pantry snacks belong with shelf-stable staples.",
+  },
+  {
+    pattern: /kumquat|peach|mango|grapefruit|strawberry|strawberries|apple|apples|orange|banana|berry|berries|grape|прасков|манго|грейпфрут|ягод/i,
+    category: "плодове",
+    storageZone: "хладилник",
+    confidence: 0.84,
+    reason: "Fruit lasts longer when it is tracked together and kept cool after purchase.",
+  },
+  {
+    pattern: /ориз|rice|pasta|паста|спагети|oats|овес|flour|брашно|cereal|булгур|киноа|bread|хляб|wheat berries|chia seeds|pistachios|nuts|dark chocolate|chocolate/i,
     category: "зърнени",
     storageZone: "шкаф",
     confidence: 0.86,
@@ -99,8 +127,9 @@ const ORGANIZER_RULES: OrganizerRule[] = [
   },
 ];
 
-function fallbackSuggestion(productName: string): ProductStorageSuggestion {
-  const rule = ORGANIZER_RULES.find((entry) => entry.pattern.test(productName));
+export function suggestProductStorageFallback(productName: string, existingCategory?: string | null): ProductStorageSuggestion {
+  const haystack = `${productName} ${existingCategory ?? ""}`;
+  const rule = ORGANIZER_RULES.find((entry) => entry.pattern.test(haystack));
 
   if (rule) {
     return {
@@ -128,7 +157,7 @@ export async function suggestProductStorage(
   options: { userId?: string } = {}
 ): Promise<ProductStorageSuggestion> {
   const normalizedName = productName.trim();
-  const fallback = fallbackSuggestion(normalizedName);
+  const fallback = suggestProductStorageFallback(normalizedName);
 
   try {
     const response = await aiGateway.generateJSON(

@@ -7,6 +7,7 @@ import { requireUserId } from "@/lib/authz";
 import { ensurePersonalHouseholdForUser } from "@/db/queries/households";
 import { canEditHouseholdInventory } from "@/features/household/constants";
 import { RECOMMENDED_CATEGORIES, normalizeTaxonomyName } from "@/features/categories/constants";
+import { organizeExistingInventoryForUser } from "@/features/categories/services/inventory-organizer.service";
 import { recordHouseholdActivity } from "@/features/household/services/household.service";
 import {
   createCategory,
@@ -302,6 +303,28 @@ export async function createRecommendedCategoriesAction(): Promise<InventoryActi
     };
   } catch {
     return { success: false, error: "Unable to add recommended categories right now" };
+  }
+}
+
+export async function organizeExistingInventoryAction(): Promise<InventoryActionState> {
+  try {
+    const user = await requireUser();
+    const result = await organizeExistingInventoryForUser(user);
+
+    revalidatePath("/dashboard");
+    revalidatePath("/dashboard/categories");
+    revalidatePath("/dashboard/inventory");
+    revalidatePath("/dashboard/scanning");
+
+    return {
+      success: true,
+      message: `${result.updatedProducts} items organized: ${result.categoryUpdates} category updates and ${result.storageUpdates} storage zone updates.`,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unable to organize existing inventory right now",
+    };
   }
 }
 
