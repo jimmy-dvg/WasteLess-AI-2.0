@@ -35,6 +35,11 @@ export const dashboardNavItems = [
     marker: "M",
   },
   {
+    label: "AI Assistant",
+    href: "/dashboard/assistant",
+    marker: "A",
+  },
+  {
     label: "Waste",
     href: "/dashboard/waste",
     marker: "W",
