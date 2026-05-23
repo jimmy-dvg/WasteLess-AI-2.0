@@ -54,6 +54,39 @@ export function buildRecipeUserPrompt(payload: ReturnType<typeof buildRecipeProm
   return `Generate ${payload.max_recipes} recipe recommendations for the user.\n\nData JSON:\n${JSON.stringify(payload)}`;
 }
 
+const nullableString = { type: ["string", "null"] };
+const nullableBoolean = { type: ["boolean", "null"] };
+const nullableNumber = { type: ["number", "null"] };
+
+const recipeIngredientJsonSchema = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    name: { type: "string" },
+    quantity: nullableString,
+    unit: nullableString,
+    notes: nullableString,
+    is_optional: nullableBoolean,
+    is_expiring: nullableBoolean,
+  },
+  required: ["name", "quantity", "unit", "notes", "is_optional", "is_expiring"],
+};
+
+const recipeNutritionJsonSchema = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    calories_kcal: { type: "number" },
+    protein_g: { type: "number" },
+    carbs_g: { type: "number" },
+    fat_g: { type: "number" },
+    fiber_g: nullableNumber,
+    sugar_g: nullableNumber,
+    sodium_mg: nullableNumber,
+  },
+  required: ["calories_kcal", "protein_g", "carbs_g", "fat_g", "fiber_g", "sugar_g", "sodium_mg"],
+};
+
 export const recipeResponseJsonSchema = {
   name: "recipe_recommendations",
   schema: {
@@ -75,53 +108,19 @@ export const recipeResponseJsonSchema = {
             difficulty: { type: "string", enum: ["easy", "medium", "hard"] },
             ingredients: {
               type: "array",
-              items: {
-                type: "object",
-                additionalProperties: false,
-                properties: {
-                  name: { type: "string" },
-                  quantity: { type: "string" },
-                  unit: { type: "string" },
-                  notes: { type: "string" },
-                  is_optional: { type: "boolean" },
-                  is_expiring: { type: "boolean" },
-                },
-                required: ["name"],
-              },
+              minItems: 1,
+              maxItems: 30,
+              items: recipeIngredientJsonSchema,
             },
             missing_ingredients: {
               type: "array",
-              items: {
-                type: "object",
-                additionalProperties: false,
-                properties: {
-                  name: { type: "string" },
-                  quantity: { type: "string" },
-                  unit: { type: "string" },
-                  notes: { type: "string" },
-                  is_optional: { type: "boolean" },
-                  is_expiring: { type: "boolean" },
-                },
-                required: ["name"],
-              },
+              maxItems: 30,
+              items: recipeIngredientJsonSchema,
             },
-            steps: { type: "array", items: { type: "string" } },
+            steps: { type: "array", minItems: 1, maxItems: 12, items: { type: "string" } },
             waste_reduction_note: { type: "string" },
-            nutrition: {
-              type: "object",
-              additionalProperties: false,
-              properties: {
-                calories_kcal: { type: "number" },
-                protein_g: { type: "number" },
-                carbs_g: { type: "number" },
-                fat_g: { type: "number" },
-                fiber_g: { type: "number" },
-                sugar_g: { type: "number" },
-                sodium_mg: { type: "number" },
-              },
-              required: ["calories_kcal", "protein_g", "carbs_g", "fat_g"],
-            },
-            tags: { type: "array", items: { type: "string" } },
+            nutrition: recipeNutritionJsonSchema,
+            tags: { type: "array", maxItems: 8, items: { type: "string" } },
           },
           required: [
             "title",
@@ -130,16 +129,18 @@ export const recipeResponseJsonSchema = {
             "cooking_time_minutes",
             "difficulty",
             "ingredients",
+            "missing_ingredients",
             "steps",
             "waste_reduction_note",
             "nutrition",
+            "tags",
           ],
         },
       },
-      summary: { type: "string" },
-      pantry_staples: { type: "array", items: { type: "string" } },
+      summary: nullableString,
+      pantry_staples: { type: "array", maxItems: 12, items: { type: "string" } },
     },
-    required: ["recipes"],
+    required: ["recipes", "summary", "pantry_staples"],
   },
   strict: true,
 };

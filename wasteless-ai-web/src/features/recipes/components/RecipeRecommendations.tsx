@@ -22,6 +22,8 @@ type RecipeGenerationResponse = {
   recipes: RecipeListItem[];
   summary?: string | null;
   pantryStaples?: string[];
+  fallback?: boolean;
+  fallbackReason?: string | null;
   cached?: boolean;
 };
 
@@ -202,7 +204,14 @@ export default function RecipeRecommendations({
               setPantryStaples(result.pantryStaples ?? []);
               setStatusMessage(null);
               setIsGenerating(false);
-              addToast(result.cached ? "Loaded cached recipes." : "New recipes ready!", "success");
+              addToast(
+                result.fallback
+                  ? "AI was unavailable, so fallback recipes are ready."
+                  : result.cached
+                    ? "Loaded cached recipes."
+                    : "New recipes ready!",
+                result.fallback ? "info" : "success"
+              );
             }
           });
         }
@@ -218,7 +227,14 @@ export default function RecipeRecommendations({
       setRecipes(payload.recipes || []);
       setSummary(payload.summary ?? null);
       setPantryStaples(payload.pantryStaples ?? []);
-      addToast(payload.cached ? "Loaded cached recipes." : "New recipes ready!", "success");
+      addToast(
+        payload.fallback
+          ? "AI was unavailable, so fallback recipes are ready."
+          : payload.cached
+            ? "Loaded cached recipes."
+            : "New recipes ready!",
+        payload.fallback ? "info" : "success"
+      );
     } catch (error) {
       addToast(error instanceof Error ? error.message : "Unable to generate recipes", "error");
     } finally {
@@ -257,7 +273,14 @@ export default function RecipeRecommendations({
       setRecipes((current) => current.map((item) => (item.id === recipe.id ? replacement : item)));
       setSummary(payload.summary ?? null);
       setPantryStaples(payload.pantryStaples ?? []);
-      addToast(payload.cached ? "Loaded a cached alternative." : "New alternative ready.", "success");
+      addToast(
+        payload.fallback
+          ? "AI was unavailable, so a fallback alternative is ready."
+          : payload.cached
+            ? "Loaded a cached alternative."
+            : "New alternative ready.",
+        payload.fallback ? "info" : "success"
+      );
     } catch (error) {
       addToast(error instanceof Error ? error.message : "Unable to generate another recipe", "error");
     } finally {

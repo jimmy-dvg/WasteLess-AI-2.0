@@ -5,7 +5,8 @@ import * as schema from "@/db/schema/tables";
 import { ensurePersonalHouseholdForUser } from "@/db/queries/households";
 import { getInventoryPageData } from "@/services/inventory.service";
 import { buildRecipePromptPayload, buildRecipeSystemPrompt, buildRecipeUserPrompt } from "@/ai/prompts/recipes";
-import { generateRecipeAiResponse, streamRecipeAiResponse } from "@/ai/services/recipe-engine";
+import { generateRecipeAiResponse, streamRecipeAiResponse, type RecipeAiResult } from "@/ai/services/recipe-engine";
+import { buildFallbackRecipeSuggestions, FALLBACK_PANTRY_STAPLES } from "@/ai/services/recipe-fallback";
 import { computeMissingIngredients, scoreRecipe } from "@/ai/services/recipe-matching";
 import { getAiSettingsForUser } from "@/ai/services/ai-settings";
 import { parseJsonValue } from "@/lib/dashboard-utils";
@@ -45,6 +46,11 @@ function normalizeName(value: string) {
 
 function isPantryStaple(name: string) {
   return PANTRY_STAPLES.has(normalizeName(name));
+}
+
+function toGenerationErrorMessage(error: unknown) {
+  if (error instanceof Error && error.message) return error.message;
+  return "AI recipe generation was unavailable.";
 }
 
 function normalizePreferences(raw: unknown): RecipePreferences {
@@ -308,6 +314,8 @@ export async function generateRecipesForUser(options: {
     recipes: RecipeListItem[];
     summary?: string;
     pantryStaples?: string[];
+    fallback?: boolean;
+    fallbackReason?: string | null;
   }>(cacheKey);
 
   if (cached) {
@@ -315,6 +323,8 @@ export async function generateRecipesForUser(options: {
       recipes: cached.recipes,
       summary: cached.summary ?? null,
       pantryStaples: cached.pantryStaples ?? [],
+      fallback: cached.fallback ?? false,
+      fallbackReason: cached.fallbackReason ?? null,
       cached: true,
     };
   }
@@ -322,7 +332,9 @@ export async function generateRecipesForUser(options: {
   const systemPrompt = buildRecipeSystemPrompt();
   const userPrompt = buildRecipeUserPrompt(promptPayload);
 
-  let aiResponse: Awaited<ReturnType<typeof generateRecipeAiResponse>>;
+  let aiResponse: RecipeAiResult | null = null;
+  let fallbackReason: string | null = null;
+  let recipes: RecipeSuggestion[] = [];
 
   try {
     if (options.streamTokens && options.onToken) {
@@ -343,40 +355,67 @@ export async function generateRecipesForUser(options: {
         userId: options.userId,
       });
     }
+    recipes = aiResponse.data.recipes.map(mapAiRecipe);
   } catch (error) {
+    fallbackReason = toGenerationErrorMessage(error);
     await logAiGeneration({
       userId: options.userId,
       householdId: household?.id ?? null,
       prompt: promptPayload,
-      result: { error: String(error) },
+      result: { error: fallbackReason },
       provider: aiSettings.provider,
       model: aiSettings.model,
       status: "error",
     });
-    throw error;
+
+    recipes = buildFallbackRecipeSuggestions({
+      maxRecipes: options.maxRecipes,
+      inventory: filteredInventory,
+      expiringItems,
+      preferences,
+      inventoryOnly,
+      excludedTitleSet,
+    });
   }
-  const recipes = aiResponse.data.recipes.map(mapAiRecipe);
 
-  const normalized = recipes.map((recipe) => {
-    const missing = computeMissingIngredients(recipe.ingredients, filteredInventory);
-    const mergedMissing = mergeMissingIngredients(missing.missing, recipe.missingIngredients);
-    const enrichedRecipe = {
-      ...recipe,
-      ingredients: missing.annotated,
-      missingIngredients: mergedMissing,
-    } satisfies RecipeSuggestion;
+  const normalizeGeneratedRecipes = (candidates: RecipeSuggestion[]) =>
+    candidates.map((recipe) => {
+      const missing = computeMissingIngredients(recipe.ingredients, filteredInventory);
+      const mergedMissing = mergeMissingIngredients(missing.missing, recipe.missingIngredients);
+      const enrichedRecipe = {
+        ...recipe,
+        ingredients: missing.annotated,
+        missingIngredients: mergedMissing,
+      } satisfies RecipeSuggestion;
 
-    const score = scoreRecipe(enrichedRecipe, filteredInventory, expiringItems, preferences);
+      const score = scoreRecipe(enrichedRecipe, filteredInventory, expiringItems, preferences);
 
-    return {
-      ...enrichedRecipe,
-      score,
-    };
-  }).filter((recipe) => {
-    if (excludedTitleSet.has(normalizeName(recipe.title))) return false;
-    if (!inventoryOnly) return true;
-    return recipe.missingIngredients.length === 0;
-  });
+      return {
+        ...enrichedRecipe,
+        score,
+      };
+    }).filter((recipe) => {
+      if (excludedTitleSet.has(normalizeName(recipe.title))) return false;
+      if (!inventoryOnly) return true;
+      return recipe.missingIngredients.length === 0;
+    });
+
+  let normalized = normalizeGeneratedRecipes(recipes);
+
+  if (normalized.length === 0 && !fallbackReason) {
+    fallbackReason = inventoryOnly
+      ? "AI returned recipes with missing ingredients for inventory-only mode."
+      : "AI returned no usable recipe alternatives.";
+    recipes = buildFallbackRecipeSuggestions({
+      maxRecipes: options.maxRecipes,
+      inventory: filteredInventory,
+      expiringItems,
+      preferences,
+      inventoryOnly,
+      excludedTitleSet,
+    });
+    normalized = normalizeGeneratedRecipes(recipes);
+  }
 
   if (normalized.length === 0) {
     throw new Error(
@@ -386,15 +425,26 @@ export async function generateRecipesForUser(options: {
     );
   }
 
+  const responseSummary = fallbackReason
+    ? "AI recommendations were unavailable, so WasteLessAI built fallback recipes from your current inventory."
+    : aiResponse?.data.summary ?? null;
+  const responsePantryStaples = aiResponse?.data.pantry_staples ?? (fallbackReason ? FALLBACK_PANTRY_STAPLES : []);
+
   const generationId = await logAiGeneration({
     userId: options.userId,
     householdId: household?.id ?? null,
     prompt: promptPayload,
-    result: aiResponse.data,
-    provider: aiResponse.provider,
-    model: aiResponse.model ?? null,
-    tokens: aiResponse.usage.totalTokens ?? null,
-    cost: aiResponse.cost ?? null,
+    result: aiResponse?.data ?? {
+      fallback: true,
+      fallbackReason,
+      recipes: normalized,
+      summary: responseSummary,
+      pantry_staples: responsePantryStaples,
+    },
+    provider: aiResponse?.provider,
+    model: aiResponse?.model ?? "deterministic-fallback",
+    tokens: aiResponse?.usage.totalTokens ?? null,
+    cost: aiResponse?.cost ?? null,
     status: "success",
   });
 
@@ -417,10 +467,11 @@ export async function generateRecipesForUser(options: {
         tags: recipe.tags ?? [],
         score: recipe.score != null ? String(recipe.score) : null,
         metadata: {
-          source: "ai_generated",
-          summary: aiResponse.data.summary ?? null,
-          pantry_staples: aiResponse.data.pantry_staples ?? [],
+          source: fallbackReason ? "fallback_generated" : "ai_generated",
+          summary: responseSummary,
+          pantry_staples: responsePantryStaples,
           ai_generation_id: generationId,
+          fallback_reason: fallbackReason,
         },
       }))
     )
@@ -453,8 +504,10 @@ export async function generateRecipesForUser(options: {
 
   const response = {
     recipes: listItems,
-    summary: aiResponse.data.summary ?? null,
-    pantryStaples: aiResponse.data.pantry_staples ?? [],
+    summary: responseSummary,
+    pantryStaples: responsePantryStaples,
+    fallback: Boolean(fallbackReason),
+    fallbackReason,
     cached: false,
   };
 
