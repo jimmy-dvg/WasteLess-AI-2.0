@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireUser } from "@/lib/auth";
+import { getCurrentUser } from "@/lib/auth";
 import { aiGateway } from "@/ai/gateway";
 import { assertRateLimit, RateLimitError } from "@/lib/rate-limit";
 import type { AIProviderStatus } from "@/ai/types";
@@ -7,7 +7,10 @@ import type { AIProviderStatus } from "@/ai/types";
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
-  const user = await requireUser();
+  const user = await getCurrentUser();
+  if (!user) {
+    return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+  }
 
   try {
     assertRateLimit(`ai:status:${user.id}`, 8, 60_000);
@@ -25,17 +28,38 @@ export async function GET(request: Request) {
   const refresh = url.searchParams.get("refresh") === "1";
   const includeModels = url.searchParams.get("models") === "1";
 
-  const statuses = await aiGateway.getProviderStatuses(refresh);
-  let providers: AIProviderStatus[] = statuses;
+  try {
+    const statuses = await aiGateway.getProviderStatuses(refresh);
+    let providers: AIProviderStatus[] = statuses;
 
-  if (includeModels) {
-    providers = await Promise.all(
-      statuses.map(async (status) => ({
-        ...status,
-        models: await aiGateway.listProviderModels(status.provider),
-      }))
+    if (includeModels) {
+      providers = await Promise.all(
+        statuses.map(async (status) => {
+          try {
+            return {
+              ...status,
+              models: await aiGateway.listProviderModels(status.provider),
+            };
+          } catch (error) {
+            return {
+              ...status,
+              available: false,
+              models: [],
+              error: error instanceof Error ? error.message : "Unable to load models",
+            };
+          }
+        })
+      );
+    }
+
+    return NextResponse.json({ success: true, data: { providers } }, { status: 200 });
+  } catch (error) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: error instanceof Error ? error.message : "Unable to load AI provider status",
+      },
+      { status: 500 }
     );
   }
-
-  return NextResponse.json({ success: true, data: { providers } }, { status: 200 });
 }

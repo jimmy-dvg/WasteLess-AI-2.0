@@ -3,6 +3,9 @@ import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import DashboardModeSwitcher from "@/components/dashboard/DashboardModeSwitcher";
 import type { NotificationDropdownData } from "@/components/dashboard/NotificationBellDropdown";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
+import FloatingAssistantChat from "@/features/assistant/components/FloatingAssistantChat";
+import { getAssistantPageData } from "@/features/assistant/services/assistant.service";
+import type { AssistantContextSummary } from "@/features/assistant/types";
 import { DEFAULT_DASHBOARD_MODE, type DashboardMode } from "@/features/dashboard-mode/constants";
 import { getDashboardModeForUser } from "@/features/dashboard-mode/services/dashboard-mode.service";
 import { DEFAULT_NOTIFICATION_SETTINGS } from "@/features/notifications/constants";
@@ -21,6 +24,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   };
   let notificationSettings = DEFAULT_NOTIFICATION_SETTINGS;
   let dashboardMode: DashboardMode = DEFAULT_DASHBOARD_MODE;
+  let assistantContextSummary: AssistantContextSummary | null = null;
 
   try {
     const [notificationData, settingsData, mode] = await Promise.all([
@@ -54,6 +58,12 @@ export default async function DashboardLayout({ children }: { children: React.Re
     dashboardMode = DEFAULT_DASHBOARD_MODE;
   }
 
+  try {
+    assistantContextSummary = await getAssistantPageData(user);
+  } catch {
+    assistantContextSummary = null;
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <aside className="fixed inset-y-0 left-0 hidden w-72 border-r border-slate-200 bg-white p-5 lg:flex lg:flex-col">
@@ -77,6 +87,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         />
         <main className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">{children}</main>
       </div>
+      <FloatingAssistantChat initialContextSummary={assistantContextSummary} />
     </div>
   );
 }

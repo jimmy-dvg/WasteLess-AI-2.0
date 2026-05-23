@@ -503,8 +503,8 @@ export default function SmartMealPlan({ data }: SmartMealPlanProps) {
             </div>
             {data.scanner.recentActivity.length > 0 ? (
               <ul className="mt-4 space-y-2 text-sm text-slate-600">
-                {data.scanner.recentActivity.map((activity) => (
-                  <li key={activity}>{activity}</li>
+                {data.scanner.recentActivity.map((activity, index) => (
+                  <li key={`${activity}-${index}`}>{activity}</li>
                 ))}
               </ul>
             ) : (

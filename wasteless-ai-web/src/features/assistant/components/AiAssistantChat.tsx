@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
-import { AlertCircle, Bot, Loader2, Send, ShoppingCart, Sparkles, UserRound } from "lucide-react";
+import { AlertCircle, Bot, Loader2, Send, ShoppingCart, Sparkles, UserRound, X } from "lucide-react";
 import type {
   AssistantChatMessageInput,
   AssistantChatResponse,
@@ -23,6 +23,8 @@ type AssistantApiResponse = {
 
 type AiAssistantChatProps = {
   initialContextSummary: AssistantContextSummary;
+  variant?: "page" | "compact";
+  onClose?: () => void;
 };
 
 const QUICK_PROMPTS = [
@@ -56,7 +58,12 @@ function getWelcomeMessage(summary: AssistantContextSummary) {
   );
 }
 
-export default function AiAssistantChat({ initialContextSummary }: AiAssistantChatProps) {
+export default function AiAssistantChat({
+  initialContextSummary,
+  variant = "page",
+  onClose,
+}: AiAssistantChatProps) {
+  const isCompact = variant === "compact";
   const [contextSummary, setContextSummary] = useState(initialContextSummary);
   const [messages, setMessages] = useState<LocalChatMessage[]>(() => [getWelcomeMessage(initialContextSummary)]);
   const [input, setInput] = useState("");
@@ -130,25 +137,49 @@ export default function AiAssistantChat({ initialContextSummary }: AiAssistantCh
     }
   }
 
-  return (
-    <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
-      <section className="flex min-h-[640px] flex-col overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-        <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+  const chatPanel = (
+    <section
+      className={`flex flex-col overflow-hidden bg-white ${
+        isCompact ? "h-full min-h-0" : "min-h-[640px] rounded-lg border border-slate-200 shadow-sm"
+      }`}
+    >
+        <div className={`flex items-center justify-between border-b border-slate-200 ${isCompact ? "px-4 py-3" : "px-5 py-4"}`}>
           <div className="flex min-w-0 items-center gap-3">
-            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100">
-              <Bot className="h-5 w-5" aria-hidden="true" />
+            <div
+              className={`grid shrink-0 place-items-center rounded-lg bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100 ${
+                isCompact ? "h-9 w-9" : "h-10 w-10"
+              }`}
+            >
+              <Bot className={isCompact ? "h-4 w-4" : "h-5 w-5"} aria-hidden="true" />
             </div>
             <div className="min-w-0">
               <h2 className="truncate text-base font-semibold text-slate-950">WasteLessAI chat</h2>
               <p className="truncate text-xs text-slate-500">{contextSummary.aiProviderLabel}</p>
             </div>
           </div>
-          <span className="rounded-lg bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
-            {contextSummary.householdName}
-          </span>
+          <div className="flex shrink-0 items-center gap-2">
+            {!isCompact ? (
+              <span className="rounded-lg bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+                {contextSummary.householdName}
+              </span>
+            ) : null}
+            {onClose ? (
+              <button
+                type="button"
+                onClick={onClose}
+                aria-label="Close assistant"
+                className="grid h-8 w-8 place-items-center rounded-lg border border-slate-200 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
+              >
+                <X className="h-4 w-4" aria-hidden="true" />
+              </button>
+            ) : null}
+          </div>
         </div>
 
-        <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto bg-slate-50/70 p-4 sm:p-5">
+        <div
+          ref={scrollRef}
+          className={`flex-1 space-y-4 overflow-y-auto bg-slate-50/70 ${isCompact ? "min-h-0 p-3" : "p-4 sm:p-5"}`}
+        >
           {messages.map((message) => {
             const isUser = message.role === "user";
 
@@ -160,7 +191,7 @@ export default function AiAssistantChat({ initialContextSummary }: AiAssistantCh
                   </div>
                 ) : null}
                 <div
-                  className={`max-w-[82%] rounded-lg px-4 py-3 text-sm leading-6 shadow-sm ${
+                  className={`${isCompact ? "max-w-[88%]" : "max-w-[82%]"} rounded-lg px-4 py-3 text-sm leading-6 shadow-sm ${
                     isUser
                       ? "bg-emerald-600 text-white"
                       : "border border-slate-200 bg-white text-slate-700"
@@ -193,7 +224,7 @@ export default function AiAssistantChat({ initialContextSummary }: AiAssistantCh
           ) : null}
         </div>
 
-        <div className="border-t border-slate-200 bg-white p-4">
+        <div className={`border-t border-slate-200 bg-white ${isCompact ? "p-3" : "p-4"}`}>
           {error ? (
             <div className="mb-3 flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
               <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
@@ -226,7 +257,7 @@ export default function AiAssistantChat({ initialContextSummary }: AiAssistantCh
               value={input}
               onChange={(event) => setInput(event.target.value)}
               onKeyDown={handleKeyDown}
-              rows={2}
+              rows={isCompact ? 1 : 2}
               maxLength={2000}
               placeholder="Ask WasteLessAI..."
               className="min-h-12 flex-1 resize-none rounded-lg border border-slate-200 px-3 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
@@ -246,6 +277,15 @@ export default function AiAssistantChat({ initialContextSummary }: AiAssistantCh
           </form>
         </div>
       </section>
+  );
+
+  if (isCompact) {
+    return chatPanel;
+  }
+
+  return (
+    <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
+      {chatPanel}
 
       <aside className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex items-center gap-3">
