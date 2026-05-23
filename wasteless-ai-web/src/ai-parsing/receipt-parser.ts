@@ -2,6 +2,7 @@ import "server-only";
 
 import { aiGateway } from "@/ai/gateway";
 import { parsedReceiptSchema } from "@/ai-parsing/schemas";
+import { CATEGORY_NAMES, STORAGE_ZONE_VALUES } from "@/features/categories/constants";
 import { addDaysToDate, estimateShelfLife, toDateInputValue } from "@/scanning/shelf-life";
 import type { ParsedReceipt, ReceiptItemExtraction } from "@/scanning/types";
 
@@ -135,8 +136,13 @@ export async function parseReceiptText(rawText: string): Promise<ParsedReceipt> 
         messages: [
           {
             role: "system",
-            content:
-              "You extract grocery receipt data for a food waste inventory app. Return strict JSON only. Correct OCR mistakes, ignore non-food/payment rows, infer sensible food categories, units, storage locations, and shelf-life days. Use ISO YYYY-MM-DD dates when known.",
+            content: [
+              "You extract grocery receipt data for a food waste inventory app. Return strict JSON only.",
+              "Correct OCR mistakes, ignore non-food/payment rows, infer sensible food categories, units, storage locations, and shelf-life days.",
+              `Use only these category labels when category is known: ${CATEGORY_NAMES.join(", ")}.`,
+              `Use only these storageLocation labels when storage is known: ${STORAGE_ZONE_VALUES.join(", ")}.`,
+              "Use ISO YYYY-MM-DD dates when known.",
+            ].join(" "),
           },
           {
             role: "user",

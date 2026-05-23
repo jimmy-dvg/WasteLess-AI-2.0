@@ -10,8 +10,8 @@ export default async function CategoriesPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Categories"
-        description="Create and manage product categories for faster filtering."
+        title="Categories and Storage Zones"
+        description="Create categories, define storage zones, and let AI suggest where each product belongs."
       />
 
       <CategoryManager categories={categories} />

@@ -3,6 +3,7 @@
 import { useActionState, useEffect } from "react";
 import { useFormStatus } from "react-dom";
 import { useToast } from "@/components/ui/Toast";
+import { STORAGE_ZONES } from "@/features/categories/constants";
 import { updateHouseholdPreferencesAction, type HouseholdActionState } from "@/features/household/actions";
 import type { HouseholdPreferences } from "@/features/household/services/household-preferences.service";
 
@@ -12,14 +13,7 @@ const initialState: HouseholdActionState = {
   error: null,
 };
 
-const storageOptions = [
-  { value: "pantry", label: "Pantry" },
-  { value: "fridge", label: "Fridge" },
-  { value: "freezer", label: "Freezer" },
-  { value: "counter", label: "Counter" },
-  { value: "cellar", label: "Cellar" },
-  { value: "other", label: "Other" },
-] as const;
+const storageOptions = STORAGE_ZONES.map((zone) => ({ value: zone.name, label: zone.name }));
 
 const cadenceOptions = [
   { value: "weekly", label: "Weekly" },

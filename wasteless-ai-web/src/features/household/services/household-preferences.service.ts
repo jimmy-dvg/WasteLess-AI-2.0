@@ -5,6 +5,7 @@ import * as schema from "@/db/schema/tables";
 import { ensurePersonalHouseholdForUser, getPrimaryHouseholdForUser, type DashboardUser } from "@/db/queries/households";
 import { parseJsonValue } from "@/lib/dashboard-utils";
 import { canManageHousehold } from "@/features/household/constants";
+import { normalizeStorageZone } from "@/features/categories/constants";
 import { householdPreferencesSchema } from "@/validation/household";
 import { eq } from "drizzle-orm";
 import type { z } from "zod";
@@ -12,13 +13,18 @@ import type { z } from "zod";
 export type HouseholdPreferences = z.infer<typeof householdPreferencesSchema>;
 
 export const DEFAULT_HOUSEHOLD_PREFERENCES: HouseholdPreferences = {
-  defaultStorageLocation: "pantry",
+  defaultStorageLocation: "килер",
   shoppingCadence: "weekly",
 };
 
 function normalizePreferences(value: unknown): HouseholdPreferences {
   const parsed = householdPreferencesSchema.safeParse(value);
-  return parsed.success ? parsed.data : DEFAULT_HOUSEHOLD_PREFERENCES;
+  if (!parsed.success) return DEFAULT_HOUSEHOLD_PREFERENCES;
+
+  return {
+    ...parsed.data,
+    defaultStorageLocation: normalizeStorageZone(parsed.data.defaultStorageLocation) as HouseholdPreferences["defaultStorageLocation"],
+  };
 }
 
 async function getHouseholdSettings(householdId: string) {

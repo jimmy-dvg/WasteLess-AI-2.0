@@ -274,7 +274,7 @@ export function generateAIResult(type: string): object {
 /**
  * Storage locations for inventory items
  */
-export const locations = ["pantry", "fridge", "freezer"] as const;
+export const locations = ["килер", "хладилник", "фризер", "шкаф"] as const;
 
 /**
  * Product units

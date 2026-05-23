@@ -1,15 +1,28 @@
 import { db } from "./db";
 import * as schema from "../schema/tables";
 import { deterministicId, productDefinitions, getAllProducts } from "./helpers";
+import { RECOMMENDED_CATEGORIES } from "../../features/categories/constants";
 
-export const SEED_CATEGORIES = [
-  { id: deterministicId("category:dairy"), name: "Dairy" },
-  { id: deterministicId("category:produce"), name: "Produce" },
-  { id: deterministicId("category:meat"), name: "Meat & Protein" },
-  { id: deterministicId("category:pantry"), name: "Pantry" },
-  { id: deterministicId("category:frozen"), name: "Frozen" },
-  { id: deterministicId("category:beverages"), name: "Beverages" },
-];
+export const SEED_CATEGORIES = RECOMMENDED_CATEGORIES.map((category) => ({
+  id: deterministicId(`category:${category.name}`),
+  name: category.name,
+  color: category.color,
+}));
+
+function getSeedCategoryId(name: string) {
+  return SEED_CATEGORIES.find((category) => category.name === name)?.id ?? SEED_CATEGORIES[0].id;
+}
+
+function categorizeSeedProduct(productName: string) {
+  if (productDefinitions.dairy.some((product) => product.name === productName)) return getSeedCategoryId("млечни");
+  if (productDefinitions.meat.some((product) => product.name === productName)) return getSeedCategoryId("месо");
+  if (productDefinitions.frozen.some((product) => product.name === productName)) return getSeedCategoryId("замразени");
+  if (productDefinitions.beverages.some((product) => product.name === productName)) return getSeedCategoryId("напитки");
+  if (/canned/i.test(productName)) return getSeedCategoryId("консерви");
+  if (/rice|pasta|flour|oats|cereal|bread/i.test(productName)) return getSeedCategoryId("зърнени");
+  if (/banana|apple|strawberries|orange/i.test(productName)) return getSeedCategoryId("плодове");
+  return getSeedCategoryId("зеленчуци");
+}
 
 export async function seedCategories() {
   console.log("🌱 Seeding categories...");
@@ -35,21 +48,8 @@ export async function seedProducts() {
   console.log("🌱 Seeding products...");
 
   const productsData = getAllProducts().map((product) => {
-    // Determine category based on product definition
-    let categoryId: string;
-    if (productDefinitions.dairy.some((p) => p.name === product.name)) {
-      categoryId = SEED_CATEGORIES[0].id;
-    } else if (productDefinitions.produce.some((p) => p.name === product.name)) {
-      categoryId = SEED_CATEGORIES[1].id;
-    } else if (productDefinitions.meat.some((p) => p.name === product.name)) {
-      categoryId = SEED_CATEGORIES[2].id;
-    } else if (productDefinitions.pantry.some((p) => p.name === product.name)) {
-      categoryId = SEED_CATEGORIES[3].id;
-    } else if (productDefinitions.frozen.some((p) => p.name === product.name)) {
-      categoryId = SEED_CATEGORIES[4].id;
-    } else {
-      categoryId = SEED_CATEGORIES[5].id;
-    }
+    const categoryId = categorizeSeedProduct(product.name);
+    const categoryName = SEED_CATEGORIES.find((category) => category.id === categoryId)?.name ?? "зеленчуци";
 
     return {
       id: deterministicId(`product:${product.name}`),
@@ -64,7 +64,7 @@ export async function seedProducts() {
         brand: product.brand,
         unit: product.unit,
         serving_size: product.serving,
-        tags: [categoryId.split(":")[1]],
+        tags: [categoryName],
       }),
       created_at: new Date(Date.now() - Math.random() * 730 * 24 * 60 * 60 * 1000),
       updated_at: new Date(),

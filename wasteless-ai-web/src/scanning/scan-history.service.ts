@@ -270,7 +270,7 @@ export async function importReceiptItemsToInventory(
         unit: item.unit ?? null,
         purchase_date: purchaseDate ?? new Date(),
         expiration_date: item.expirationDate ? parseDateInput(item.expirationDate) : null,
-        storage_location: item.storageLocation ?? "pantry",
+        storage_location: item.storageLocation ?? "килер",
         notes:
           item.notes ??
           (data.receiptId
@@ -365,7 +365,7 @@ export async function importBarcodeProductToInventory(
       unit: data.unit ?? null,
       purchase_date: data.purchaseDate ? parseDateInput(data.purchaseDate) : new Date(),
       expiration_date: data.expirationDate ? parseDateInput(data.expirationDate) : null,
-      storage_location: data.storageLocation ?? "pantry",
+      storage_location: data.storageLocation ?? "килер",
       notes: data.notes ?? "Imported from barcode scanner",
       brand: data.brand ?? null,
       gtin: data.barcode,

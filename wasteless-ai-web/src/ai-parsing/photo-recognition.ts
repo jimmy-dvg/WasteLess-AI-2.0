@@ -1,6 +1,7 @@
 import "server-only";
 
 import { parsedReceiptSchema } from "@/ai-parsing/schemas";
+import { CATEGORY_NAMES, STORAGE_ZONE_VALUES } from "@/features/categories/constants";
 import { addDaysToDate, estimateShelfLife, toDateInputValue } from "@/scanning/shelf-life";
 import type { ParsedReceipt, PhotoScanMode } from "@/scanning/types";
 
@@ -409,8 +410,14 @@ async function recognizeWithOpenAI(
       messages: [
         {
           role: "system",
-          content:
-            "You identify visible food, ingredients, meals, packaged groceries, produce, and drinks in a photo for an inventory app. Return JSON only. Detect food from any setting; do not require a fridge, shelf, receipt, barcode, or package label. Infer product names, visible counts, units, category, storage location, shelfLifeDays, expirationDate when clear, and confidence. Do not invent brands unless visible.",
+          content: [
+            "You identify visible food, ingredients, meals, packaged groceries, produce, and drinks in a photo for an inventory app. Return JSON only.",
+            "Detect food from any setting; do not require a fridge, shelf, receipt, barcode, or package label.",
+            "Infer product names, visible counts, units, category, storage location, shelfLifeDays, expirationDate when clear, and confidence.",
+            `Use only these category labels when category is known: ${CATEGORY_NAMES.join(", ")}.`,
+            `Use only these storageLocation labels when storage is known: ${STORAGE_ZONE_VALUES.join(", ")}.`,
+            "Do not invent brands unless visible.",
+          ].join(" "),
         },
         {
           role: "user",
@@ -542,7 +549,11 @@ async function recognizeWithGeminiModel(
               {
                 text: `Analyze this ${modeLabel(
                   mode
-                )}. Detect all visible food items, ingredients, packaged groceries, produce, beverages, and prepared foods from any setting. If food is visible, items must not be empty. Return JSON only. Use exactly this shape: {"storeName": string|null, "purchaseDate": "YYYY-MM-DD"|null, "total": null, "currency": "USD", "warnings": string[], "items": [{"name": string, "normalizedName": string, "quantity": number, "unit": string|null, "price": null, "brand": string|null, "category": string|null, "shelfLifeDays": number|null, "expirationDate": "YYYY-MM-DD"|null, "storageLocation": string|null, "confidence": number}]}. Do not use markdown. Today is ${toDateInputValue(
+                )}. Detect all visible food items, ingredients, packaged groceries, produce, beverages, and prepared foods from any setting. If food is visible, items must not be empty. Use category labels from ${CATEGORY_NAMES.join(
+                  ", "
+                )} and storageLocation labels from ${STORAGE_ZONE_VALUES.join(
+                  ", "
+                )}. Return JSON only. Use exactly this shape: {"storeName": string|null, "purchaseDate": "YYYY-MM-DD"|null, "total": null, "currency": "USD", "warnings": string[], "items": [{"name": string, "normalizedName": string, "quantity": number, "unit": string|null, "price": null, "brand": string|null, "category": string|null, "shelfLifeDays": number|null, "expirationDate": "YYYY-MM-DD"|null, "storageLocation": string|null, "confidence": number}]}. Do not use markdown. Today is ${toDateInputValue(
                   new Date()
                 )}.`,
               },

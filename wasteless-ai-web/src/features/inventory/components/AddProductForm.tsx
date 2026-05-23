@@ -5,6 +5,7 @@ import { useFormStatus } from "react-dom";
 import type { InventoryCategory } from "@/types/inventory";
 import { createProductAction, type InventoryActionState } from "../actions";
 import { useToast } from "@/components/ui/Toast";
+import { STORAGE_LOCATION_OPTIONS } from "@/features/categories/constants";
 
 const initialState: InventoryActionState = {
   success: false,
@@ -26,11 +27,11 @@ function SubmitButton() {
   );
 }
 
-const locationOptions = ["pantry", "fridge", "freezer", "counter", "cellar", "other"];
+const locationOptions = STORAGE_LOCATION_OPTIONS;
 
 export default function AddProductForm({
   categories,
-  defaultStorageLocation = "pantry",
+  defaultStorageLocation = "килер",
 }: {
   categories: InventoryCategory[];
   defaultStorageLocation?: string;
@@ -103,7 +104,7 @@ export default function AddProductForm({
             name="storage_location"
             list="storage-options"
             defaultValue={defaultStorageLocation}
-            placeholder="pantry"
+            placeholder="хладилник"
             className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm capitalize outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
           />
         </label>

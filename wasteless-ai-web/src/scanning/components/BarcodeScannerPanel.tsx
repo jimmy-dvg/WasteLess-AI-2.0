@@ -5,6 +5,7 @@ import { BrowserMultiFormatReader, type IScannerControls } from "@zxing/browser"
 import { BarcodeFormat, DecodeHintType } from "@zxing/library";
 import { AlertCircle, Camera, PackageCheck, Plus, RotateCcw, ScanLine, Square } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
+import { STORAGE_LOCATION_OPTIONS } from "@/features/categories/constants";
 import { createSampleBarcodeResult } from "@/scanning/sample-data";
 import { addDaysToDate, toDateInputValue } from "@/scanning/shelf-life";
 import type { BarcodeLookupResult, BarcodeProductMetadata } from "@/scanning/types";
@@ -411,7 +412,8 @@ export default function BarcodeScannerPanel({ categories, onHistoryChanged }: Ba
                     <span className="text-xs font-semibold text-slate-600">Storage</span>
                     <input
                       name="storageLocation"
-                      defaultValue={product.storageLocation ?? "pantry"}
+                      list="barcode-storage-options"
+                      defaultValue={product.storageLocation ?? "килер"}
                       className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
                     />
                   </label>
@@ -441,6 +443,11 @@ export default function BarcodeScannerPanel({ categories, onHistoryChanged }: Ba
                   <Plus className="h-4 w-4" aria-hidden="true" />
                   {isImporting ? "Adding..." : "Add to inventory"}
                 </button>
+                <datalist id="barcode-storage-options">
+                  {STORAGE_LOCATION_OPTIONS.map((option) => (
+                    <option key={option} value={option} />
+                  ))}
+                </datalist>
               </form>
             </div>
           )}

@@ -1,4 +1,5 @@
 import { HOUSEHOLD_ROLES } from "@/features/household/constants";
+import { STORAGE_LOCATION_OPTIONS } from "@/features/categories/constants";
 import { z } from "zod";
 
 export const householdInvitationSchema = z.object({
@@ -28,6 +29,6 @@ export const activeHouseholdSchema = z.object({
 });
 
 export const householdPreferencesSchema = z.object({
-  defaultStorageLocation: z.enum(["pantry", "fridge", "freezer", "counter", "cellar", "other"]),
+  defaultStorageLocation: z.enum(STORAGE_LOCATION_OPTIONS),
   shoppingCadence: z.enum(["weekly", "biweekly", "as_needed"]),
 });

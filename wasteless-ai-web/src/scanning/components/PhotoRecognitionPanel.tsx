@@ -196,7 +196,7 @@ export default function PhotoRecognitionPanel({ categories, onHistoryChanged }: 
                         </p>
                       </div>
                       <span className="rounded-full bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700">
-                        {item.storageLocation ?? "pantry"}
+                        {item.storageLocation ?? "килер"}
                       </span>
                     </div>
                   </article>

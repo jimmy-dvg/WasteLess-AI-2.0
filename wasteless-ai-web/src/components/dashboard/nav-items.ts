@@ -20,7 +20,7 @@ export const dashboardNavItems = [
     marker: "B",
   },
   {
-    label: "Categories",
+    label: "Categories & Zones",
     href: "/dashboard/categories",
     marker: "C",
   },

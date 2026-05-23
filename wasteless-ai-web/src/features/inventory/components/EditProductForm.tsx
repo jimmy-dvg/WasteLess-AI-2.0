@@ -6,6 +6,7 @@ import { useFormStatus } from "react-dom";
 import type { InventoryCategory, InventoryProduct } from "@/types/inventory";
 import { updateProductAction, type InventoryActionState } from "../actions";
 import { useToast } from "@/components/ui/Toast";
+import { STORAGE_LOCATION_OPTIONS } from "@/features/categories/constants";
 
 const initialState: InventoryActionState = {
   success: false,
@@ -97,7 +98,9 @@ export default function EditProductForm({
           <span className="text-xs font-semibold text-slate-600">Storage location</span>
           <input
             name="storage_location"
+            list="edit-storage-options"
             defaultValue={product.storageLocation ?? ""}
+            placeholder="хладилник"
             className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm capitalize outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
           />
         </label>
@@ -133,6 +136,11 @@ export default function EditProductForm({
         <SubmitButton />
         {state.error ? <p className="text-sm font-medium text-rose-700">{state.error}</p> : null}
       </div>
+      <datalist id="edit-storage-options">
+        {STORAGE_LOCATION_OPTIONS.map((option) => (
+          <option key={option} value={option} />
+        ))}
+      </datalist>
     </form>
   );
 }

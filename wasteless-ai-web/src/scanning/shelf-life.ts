@@ -1,18 +1,19 @@
 const SHELF_LIFE_RULES = [
-  { pattern: /milk|yogurt|cream|kefir|dairy/i, days: 10, storageLocation: "fridge", category: "Dairy" },
-  { pattern: /cheese|butter/i, days: 21, storageLocation: "fridge", category: "Dairy" },
-  { pattern: /chicken|turkey|poultry/i, days: 2, storageLocation: "fridge", category: "Meat" },
-  { pattern: /beef|pork|steak|bacon|sausage/i, days: 4, storageLocation: "fridge", category: "Meat" },
-  { pattern: /fish|salmon|tuna|shrimp|seafood/i, days: 2, storageLocation: "fridge", category: "Seafood" },
-  { pattern: /lettuce|spinach|arugula|greens|herbs/i, days: 5, storageLocation: "fridge", category: "Produce" },
-  { pattern: /apple|orange|lemon|lime|carrot|potato|onion/i, days: 21, storageLocation: "pantry", category: "Produce" },
-  { pattern: /banana|berry|berries|grape|tomato|avocado/i, days: 5, storageLocation: "counter", category: "Produce" },
-  { pattern: /bread|bagel|bun|tortilla|bakery/i, days: 5, storageLocation: "pantry", category: "Bakery" },
-  { pattern: /cereal|rice|pasta|flour|sugar|oats|granola/i, days: 180, storageLocation: "pantry", category: "Dry Goods" },
-  { pattern: /can|canned|beans|soup|sauce|tomato paste/i, days: 365, storageLocation: "pantry", category: "Canned Goods" },
-  { pattern: /frozen|ice cream|pizza/i, days: 120, storageLocation: "freezer", category: "Frozen" },
-  { pattern: /juice|soda|water|drink|beverage/i, days: 120, storageLocation: "pantry", category: "Beverages" },
-  { pattern: /snack|chips|cracker|cookie|chocolate/i, days: 90, storageLocation: "pantry", category: "Snacks" },
+  { pattern: /milk|yogurt|cream|kefir|dairy|мляко|йогурт|сирене|кашкавал/i, days: 10, storageLocation: "хладилник", category: "млечни" },
+  { pattern: /cheese|butter|масло/i, days: 21, storageLocation: "хладилник", category: "млечни" },
+  { pattern: /chicken|turkey|poultry|пиле|пуйка/i, days: 2, storageLocation: "хладилник", category: "месо" },
+  { pattern: /beef|pork|steak|bacon|sausage|телеш|свин|бекон|наденица/i, days: 4, storageLocation: "хладилник", category: "месо" },
+  { pattern: /fish|salmon|tuna|shrimp|seafood|риба|сьомга|тон|скариди/i, days: 2, storageLocation: "хладилник", category: "месо" },
+  { pattern: /lettuce|spinach|arugula|greens|herbs|салата|спанак|рукола/i, days: 5, storageLocation: "хладилник", category: "зеленчуци" },
+  { pattern: /carrot|potato|onion|tomato|avocado|морков|картоф|лук|домат|авокадо/i, days: 14, storageLocation: "хладилник", category: "зеленчуци" },
+  { pattern: /apple|orange|lemon|lime|banana|berry|berries|grape|ябъл|портокал|лимон|банан|ягод|грозде/i, days: 7, storageLocation: "хладилник", category: "плодове" },
+  { pattern: /bread|bagel|bun|tortilla|bakery|хляб|тортила/i, days: 5, storageLocation: "шкаф", category: "зърнени" },
+  { pattern: /cereal|rice|pasta|flour|sugar|oats|granola|ориз|паста|брашно|овес/i, days: 180, storageLocation: "шкаф", category: "зърнени" },
+  { pattern: /can|canned|beans|soup|sauce|tomato paste|консерв|буркан|боб|супа/i, days: 365, storageLocation: "килер", category: "консерви" },
+  { pattern: /frozen|ice cream|pizza|замраз|сладолед/i, days: 120, storageLocation: "фризер", category: "замразени" },
+  { pattern: /juice|soda|water|drink|beverage|сок|вода|напит/i, days: 120, storageLocation: "килер", category: "напитки" },
+  { pattern: /spice|salt|pepper|herb|подправ|сол|пипер|риган/i, days: 365, storageLocation: "шкаф", category: "подправки" },
+  { pattern: /snack|chips|cracker|cookie|chocolate/i, days: 90, storageLocation: "шкаф", category: "зърнени" },
 ];
 
 export type ShelfLifeEstimate = {
@@ -35,8 +36,8 @@ export function estimateShelfLife(name: string, category?: string | null): Shelf
 
   return {
     shelfLifeDays: 14,
-    storageLocation: "pantry",
-    category: category || "Grocery",
+    storageLocation: "килер",
+    category: category || "зърнени",
   };
 }
 

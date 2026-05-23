@@ -6,12 +6,14 @@ import { requireUser } from "@/lib/auth";
 import { requireUserId } from "@/lib/authz";
 import { ensurePersonalHouseholdForUser } from "@/db/queries/households";
 import { canEditHouseholdInventory } from "@/features/household/constants";
+import { RECOMMENDED_CATEGORIES, normalizeTaxonomyName } from "@/features/categories/constants";
 import { recordHouseholdActivity } from "@/features/household/services/household.service";
 import {
   createCategory,
   createProduct,
   deleteCategory,
   deleteProduct,
+  getCategoriesForUser,
   getProductById,
   updateCategory,
   updateProduct,
@@ -267,6 +269,39 @@ export async function createCategoryAction(
     };
   } catch {
     return { success: false, error: "Unable to create category right now" };
+  }
+}
+
+export async function createRecommendedCategoriesAction(): Promise<InventoryActionState> {
+  const userId = await requireUserId();
+
+  try {
+    const currentCategories = await getCategoriesForUser(userId);
+    const existingNames = new Set(currentCategories.map((category) => normalizeTaxonomyName(category.name)));
+    const missingCategories = RECOMMENDED_CATEGORIES.filter(
+      (category) => !existingNames.has(normalizeTaxonomyName(category.name))
+    );
+
+    if (missingCategories.length === 0) {
+      return { success: true, message: "Recommended categories are already ready." };
+    }
+
+    for (const category of missingCategories) {
+      await createCategory(userId, {
+        name: category.name,
+        color: category.color,
+      });
+    }
+
+    revalidatePath("/dashboard/categories");
+    revalidatePath("/dashboard/inventory");
+
+    return {
+      success: true,
+      message: `${missingCategories.length} recommended categories added.`,
+    };
+  } catch {
+    return { success: false, error: "Unable to add recommended categories right now" };
   }
 }
 
