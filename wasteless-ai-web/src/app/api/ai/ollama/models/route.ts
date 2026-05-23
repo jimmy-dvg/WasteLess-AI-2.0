@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server";
-import { requireUser } from "@/lib/auth";
+import { requireApiUser } from "@/lib/auth";
 import { aiGateway } from "@/ai/gateway";
 import { assertRateLimit, RateLimitError } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const user = await requireUser();
+  const auth = await requireApiUser();
+  if (!auth.success) return auth.response;
+  const { user } = auth;
 
   try {
     assertRateLimit(`ai:ollama:models:${user.id}`, 10, 60_000);

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { recognizeFoodFromImage } from "@/ai-parsing/photo-recognition";
 import { validateScanImageFile } from "@/image-processing/server";
-import { requireUser } from "@/lib/auth";
+import { requireApiUser } from "@/lib/auth";
 import { createScanHistoryEntry } from "@/scanning/scan-history.service";
 import { photoScanModeSchema } from "@/scanning/validation";
 import { uploadReceiptImage } from "@/storage/cloudinary";
@@ -9,7 +9,10 @@ import { uploadReceiptImage } from "@/storage/cloudinary";
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
-  const user = await requireUser();
+  const auth = await requireApiUser();
+  if (!auth.success) return auth.response;
+  const { user } = auth;
+
   const formData = await request.formData().catch(() => null);
   const file = formData?.get("image");
   const modeValue = formData?.get("mode");

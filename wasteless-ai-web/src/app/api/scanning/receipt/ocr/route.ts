@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { parseReceiptText } from "@/ai-parsing/receipt-parser";
 import { validateReceiptImageFile } from "@/image-processing/server";
-import { requireUser } from "@/lib/auth";
+import { requireApiUser } from "@/lib/auth";
 import { extractTextFromImage } from "@/ocr/ocr.service";
 import {
   createScanHistoryEntry,
@@ -12,7 +12,10 @@ import { uploadReceiptImage } from "@/storage/cloudinary";
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
-  const user = await requireUser();
+  const auth = await requireApiUser();
+  if (!auth.success) return auth.response;
+  const { user } = auth;
+
   const formData = await request.formData().catch(() => null);
   const file = formData?.get("image");
 

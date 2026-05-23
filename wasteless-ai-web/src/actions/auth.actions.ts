@@ -8,18 +8,41 @@ import { cookies } from "next/headers";
 import { signToken } from "@/lib/jwt";
 import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
+import { SESSION_COOKIE_NAME } from "@/lib/auth-constants";
+import { isJwtSecretMissingError } from "@/lib/jwt-secret";
 
 const registerSchema = z.object({
   full_name: z.string().min(2, "Full name must be at least 2 characters").max(100),
-  email: z.string().email("Enter a valid email address"),
+  email: z
+    .string()
+    .trim()
+    .email("Enter a valid email address")
+    .max(320)
+    .transform((value) => value.toLowerCase()),
   password: z.string().min(8, "Password must be at least 8 characters"),
   confirm_password: z.string().min(8, "Confirm password must be at least 8 characters"),
 });
 
 const loginSchema = z.object({
-  email: z.string().email("Enter a valid email address"),
+  email: z
+    .string()
+    .trim()
+    .email("Enter a valid email address")
+    .max(320)
+    .transform((value) => value.toLowerCase()),
   password: z.string().min(1, "Password is required"),
 });
+
+const DUPLICATE_EMAIL_ERROR = "An account with this email already exists.";
+
+function isUniqueViolation(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+
+  const candidate = error as { code?: unknown; cause?: unknown };
+  if (candidate.code === "23505") return true;
+
+  return isUniqueViolation(candidate.cause);
+}
 
 export type AuthActionState = {
   success: boolean;
@@ -43,15 +66,6 @@ export async function registerUser(
   }
 
   try {
-    const existing = await db
-      .select()
-      .from(schema.users)
-      .where(eq(schema.users.email, parsed.data.email))
-      .limit(1);
-    if (existing.length > 0) {
-      return { success: false, error: "Email already in use" };
-    }
-
     const password_hash = await bcrypt.hash(parsed.data.password, 10);
 
     const user = await db.transaction(async (tx) => {
@@ -62,9 +76,12 @@ export async function registerUser(
           name: parsed.data.full_name,
           password_hash,
         })
+        .onConflictDoNothing({ target: schema.users.email })
         .returning();
 
       const created = insert[0];
+      if (!created) return null;
+
       await tx.insert(schema.profiles).values({
         id: created.id,
         email: created.email,
@@ -73,11 +90,15 @@ export async function registerUser(
       return created;
     });
 
+    if (!user) {
+      return { success: false, error: DUPLICATE_EMAIL_ERROR };
+    }
+
     const token = signToken({ sub: user.id });
 
     const cookieStore = await cookies();
     cookieStore.set({
-      name: "session",
+      name: SESSION_COOKIE_NAME,
       value: token,
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -85,7 +106,13 @@ export async function registerUser(
       path: "/",
       maxAge: 60 * 60 * 24 * 7,
     });
-  } catch {
+  } catch (error) {
+    if (isJwtSecretMissingError(error)) throw error;
+
+    if (isUniqueViolation(error)) {
+      return { success: false, error: DUPLICATE_EMAIL_ERROR };
+    }
+
     return { success: false, error: "Unable to create account" };
   }
 
@@ -130,7 +157,7 @@ export async function loginUser(
 
     const cookieStore = await cookies();
     cookieStore.set({
-      name: "session",
+      name: SESSION_COOKIE_NAME,
       value: token,
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -138,7 +165,9 @@ export async function loginUser(
       path: "/",
       maxAge: 60 * 60 * 24 * 7,
     });
-  } catch {
+  } catch (error) {
+    if (isJwtSecretMissingError(error)) throw error;
+
     return { success: false, error: "Unable to sign you in" };
   }
 
@@ -148,6 +177,6 @@ export async function loginUser(
 
 export async function logoutUser() {
   const cookieStore = await cookies();
-  cookieStore.delete("session");
+  cookieStore.delete(SESSION_COOKIE_NAME);
   redirect("/login");
 }

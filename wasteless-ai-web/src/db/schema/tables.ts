@@ -12,18 +12,24 @@ import {
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 
-export const users = pgTable("users", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  email: varchar("email", { length: 320 }).notNull(),
-  email_verified_at: timestamp("email_verified_at", { mode: "string" }),
-  name: text("name").notNull(),
-  avatar_url: text("avatar_url"),
-  password_hash: text("password_hash"),
-  preferred_locale: varchar("preferred_locale", { length: 10 }).default("en"),
-  meta: jsonb("meta").default({}),
-  created_at: timestamp("created_at").defaultNow().notNull(),
-  updated_at: timestamp("updated_at").defaultNow().notNull(),
-});
+export const users = pgTable(
+  "users",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    email: varchar("email", { length: 320 }).notNull(),
+    email_verified_at: timestamp("email_verified_at", { mode: "string" }),
+    name: text("name").notNull(),
+    avatar_url: text("avatar_url"),
+    password_hash: text("password_hash"),
+    preferred_locale: varchar("preferred_locale", { length: 10 }).default("en"),
+    meta: jsonb("meta").default({}),
+    created_at: timestamp("created_at").defaultNow().notNull(),
+    updated_at: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    emailUnique: uniqueIndex("users_email_unique").on(table.email),
+  })
+);
 
 export const profiles = pgTable(
   "profiles",

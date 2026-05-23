@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { ensurePersonalHouseholdForUser } from "@/db/queries/households";
 import { canEditHouseholdInventory } from "@/features/household/constants";
-import { requireUser } from "@/lib/auth";
+import { requireApiUser } from "@/lib/auth";
 import { undoScanImportBatch } from "@/scanning/scan-history.service";
 
 export const runtime = "nodejs";
@@ -11,7 +11,10 @@ type RouteContext = {
 };
 
 export async function POST(_request: Request, context: RouteContext) {
-  const user = await requireUser();
+  const auth = await requireApiUser();
+  if (!auth.success) return auth.response;
+  const { user } = auth;
+
   const { batchId } = await context.params;
 
   try {

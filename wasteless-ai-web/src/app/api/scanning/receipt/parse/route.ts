@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { parseReceiptText } from "@/ai-parsing/receipt-parser";
-import { requireUser } from "@/lib/auth";
+import { requireApiUser } from "@/lib/auth";
 import {
   createScanHistoryEntry,
   createScannedReceipt,
@@ -10,7 +10,10 @@ import { ocrParseRequestSchema } from "@/scanning/validation";
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
-  const user = await requireUser();
+  const auth = await requireApiUser();
+  if (!auth.success) return auth.response;
+  const { user } = auth;
+
   const body = await request.json().catch(() => null);
   const parsed = ocrParseRequestSchema.safeParse(body);
 
