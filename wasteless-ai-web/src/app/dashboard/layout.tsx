@@ -6,7 +6,11 @@ import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import FloatingAssistantChat from "@/features/assistant/components/FloatingAssistantChat";
 import { getAssistantPageData } from "@/features/assistant/services/assistant.service";
 import type { AssistantContextSummary } from "@/features/assistant/types";
-import { DEFAULT_DASHBOARD_MODE, type DashboardMode } from "@/features/dashboard-mode/constants";
+import {
+  DASHBOARD_MODE_THEMES,
+  DEFAULT_DASHBOARD_MODE,
+  type DashboardMode,
+} from "@/features/dashboard-mode/constants";
 import { getDashboardModeForUser } from "@/features/dashboard-mode/services/dashboard-mode.service";
 import { DEFAULT_NOTIFICATION_SETTINGS } from "@/features/notifications/constants";
 import {
@@ -64,19 +68,23 @@ export default async function DashboardLayout({ children }: { children: React.Re
     assistantContextSummary = null;
   }
 
+  const theme = DASHBOARD_MODE_THEMES[dashboardMode];
+
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
-      <aside className="fixed inset-y-0 left-0 hidden w-72 border-r border-slate-200 bg-white p-5 lg:flex lg:flex-col">
-        <div className="mb-8">
+    <div className={`min-h-screen text-slate-900 transition-colors duration-300 ${theme.appShellClass}`}>
+      <aside
+        className={`fixed inset-y-0 left-0 hidden w-72 overflow-hidden border-r p-5 lg:flex lg:flex-col ${theme.sidebarClass}`}
+      >
+        <div className="mb-5 shrink-0">
           <Link href="/" className="text-lg font-bold text-slate-950">
             WasteLessAI
           </Link>
           <p className="mt-1 text-sm text-slate-500">Smart household waste control</p>
         </div>
-        <DashboardSidebar />
-        <div className="mt-auto">
+        <div className="mb-5 shrink-0">
           <DashboardModeSwitcher key={dashboardMode} currentMode={dashboardMode} />
         </div>
+        <DashboardSidebar dashboardMode={dashboardMode} />
       </aside>
       <div className="lg:pl-72">
         <DashboardHeader

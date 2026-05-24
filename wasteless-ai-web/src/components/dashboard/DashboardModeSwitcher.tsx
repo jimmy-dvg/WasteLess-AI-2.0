@@ -7,6 +7,7 @@ import {
   DASHBOARD_MODE_DESCRIPTIONS,
   DASHBOARD_MODE_LABELS,
   DASHBOARD_MODES,
+  DASHBOARD_MODE_THEMES,
   type DashboardMode,
 } from "@/features/dashboard-mode/constants";
 import {
@@ -28,6 +29,7 @@ function ModeSelect({
   onSelect: (mode: DashboardMode) => void;
 }) {
   const { pending } = useFormStatus();
+  const theme = DASHBOARD_MODE_THEMES[selectedMode];
 
   return (
     <select
@@ -39,8 +41,8 @@ function ModeSelect({
         onSelect(mode);
         event.currentTarget.form?.requestSubmit();
       }}
-      className="mt-2 w-full rounded-lg border border-emerald-200 bg-white px-3 py-2 text-sm font-semibold text-emerald-950 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 disabled:cursor-not-allowed disabled:opacity-70"
-      aria-label="Dashboard mode"
+      className={`mt-2 w-full rounded-lg px-3 py-2 text-sm font-semibold outline-none transition focus:ring-2 disabled:cursor-not-allowed disabled:opacity-70 ${theme.switcherSelectClass}`}
+      aria-label="Focus mode"
     >
       {DASHBOARD_MODES.map((mode) => (
         <option key={mode} value={mode}>
@@ -55,7 +57,7 @@ function SaveStatus() {
   const { pending } = useFormStatus();
   if (!pending) return null;
 
-  return <p className="mt-2 text-xs font-medium text-emerald-800">Saving...</p>;
+  return <p className="mt-2 text-xs font-medium">Saving...</p>;
 }
 
 export default function DashboardModeSwitcher({ currentMode }: { currentMode: DashboardMode }) {
@@ -68,14 +70,18 @@ export default function DashboardModeSwitcher({ currentMode }: { currentMode: Da
     if (state.message) addToast(state.message, state.success ? "success" : "info");
   }, [state, addToast]);
 
+  const theme = DASHBOARD_MODE_THEMES[selectedMode];
+
   return (
-    <form action={formAction} className="rounded-lg border border-emerald-100 bg-emerald-50 p-4">
-      <p className="text-xs font-semibold uppercase tracking-normal text-emerald-700">Dashboard mode</p>
+    <form action={formAction} className={`rounded-lg border p-4 ${theme.switcherClass}`}>
+      <p className={`text-xs font-semibold uppercase tracking-normal ${theme.switcherLabelClass}`}>Focus Mode</p>
       <ModeSelect selectedMode={selectedMode} onSelect={setSelectedMode} />
-      <p className="mt-2 text-xs leading-5 text-emerald-800">
+      <p className={`mt-2 text-xs leading-5 ${theme.switcherDescriptionClass}`}>
         {DASHBOARD_MODE_DESCRIPTIONS[selectedMode]}
       </p>
-      <SaveStatus />
+      <div className={theme.switcherStatusClass}>
+        <SaveStatus />
+      </div>
     </form>
   );
 }

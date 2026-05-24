@@ -5,8 +5,7 @@ import * as schema from "@/db/schema/tables";
 import { parseJsonValue } from "@/lib/dashboard-utils";
 import { eq } from "drizzle-orm";
 import {
-  DEFAULT_DASHBOARD_MODE,
-  isDashboardMode,
+  normalizeDashboardMode,
   type DashboardMode,
 } from "../constants";
 
@@ -20,7 +19,7 @@ export async function getDashboardModeForUser(userId: string): Promise<Dashboard
     .limit(1);
 
   const meta = parseJsonValue<UserMeta>(rows[0]?.meta ?? {}, {});
-  return isDashboardMode(meta.dashboardMode) ? meta.dashboardMode : DEFAULT_DASHBOARD_MODE;
+  return normalizeDashboardMode(meta.dashboardMode);
 }
 
 export async function updateDashboardModeForUser(userId: string, mode: DashboardMode) {

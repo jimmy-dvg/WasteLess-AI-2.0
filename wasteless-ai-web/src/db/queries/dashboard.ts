@@ -62,7 +62,11 @@ export async function getDashboardOverview(userId: string) {
       .limit(6),
     db
       .select({
+        id: schema.products.id,
         name: schema.products.name,
+        quantity: schema.products.quantity,
+        unit: schema.products.unit,
+        location: schema.products.storage_location,
         expirationDate: schema.products.expiration_date,
       })
       .from(schema.products)
@@ -93,6 +97,15 @@ export async function getDashboardOverview(userId: string) {
     status: getExpirationStatus(item.expirationDate),
   }));
 
+  const expiringSoonItems = soonRows.map((item) => ({
+    id: item.id,
+    name: item.name,
+    quantity: formatQuantity(item.quantity, item.unit),
+    location: item.location ?? "pantry",
+    expirationDate: item.expirationDate,
+    status: getExpirationStatus(item.expirationDate),
+  }));
+
   const insights = [
     stats.expiringSoon > 0
       ? `${stats.expiringSoon} item${stats.expiringSoon === 1 ? "" : "s"} expire this week.`
@@ -114,6 +127,7 @@ export async function getDashboardOverview(userId: string) {
     household,
     stats,
     recentInventory,
+    expiringSoonItems,
     insights,
   };
 }

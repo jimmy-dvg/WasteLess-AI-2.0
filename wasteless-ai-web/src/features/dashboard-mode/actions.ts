@@ -20,7 +20,7 @@ export async function updateDashboardModeAction(
   if (!isDashboardMode(mode)) {
     return {
       success: false,
-      error: "Invalid dashboard mode",
+      error: "Invalid focus mode",
     };
   }
 
@@ -32,13 +32,13 @@ export async function updateDashboardModeAction(
 
     return {
       success: true,
-      message: "Dashboard mode updated.",
+      message: "Focus mode updated.",
       mode: updatedMode,
     };
   } catch {
     return {
       success: false,
-      error: "Unable to update dashboard mode right now",
+      error: "Unable to update focus mode right now",
     };
   }
 }

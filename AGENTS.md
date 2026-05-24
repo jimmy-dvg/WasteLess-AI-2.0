@@ -1,5 +1,10 @@
 # AGENTS.md — WasteLessAI
 
+# WasteLessAI 
+- WastelessAI is Next.js + Expp app is an AI-assisted web application focused on reducing household food and product waste
+- Workspace 'wasteless-ai-web': Next. js-based back-end + Web front-end
+- Workspace 'westeless-ai-mobile': Expo-based mobile client app
+
 ## Project Overview
 
 WasteLessAI is an AI-assisted web application focused on reducing household food and product waste.
