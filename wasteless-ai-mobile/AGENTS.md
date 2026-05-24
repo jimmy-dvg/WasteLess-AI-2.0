@@ -94,6 +94,9 @@ Always include:
 
 ---
 
+# API Source Code
+- Back-end API source code: .. \wasteless-ai-web\src\app\api
+
 # API Rules
 
 Mobile app should:

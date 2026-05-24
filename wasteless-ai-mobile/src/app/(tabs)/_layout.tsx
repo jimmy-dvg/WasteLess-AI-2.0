@@ -1,9 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Tabs } from 'expo-router';
+import { Redirect, Tabs } from 'expo-router';
 import React from 'react';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { ROUTES } from '@/navigation/routes';
+import { useAuth } from '@/store/authStore';
 
 type TabIconName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -14,6 +17,19 @@ function TabIcon({ color, name }: { color: string; name: TabIconName }) {
 export default function TabLayout() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <View style={[styles.loading, { backgroundColor: colors.background }]}>
+        <ActivityIndicator color={colors.tint} />
+      </View>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Redirect href={ROUTES.login} />;
+  }
 
   return (
     <Tabs
@@ -64,3 +80,11 @@ export default function TabLayout() {
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  loading: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});

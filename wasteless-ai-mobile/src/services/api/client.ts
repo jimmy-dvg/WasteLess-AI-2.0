@@ -18,18 +18,49 @@ export class ApiError extends Error {
 }
 
 function getApiBaseUrl() {
-  return process.env.EXPO_PUBLIC_API_URL ?? '';
+  return process.env.EXPO_PUBLIC_API_URL?.trim().replace(/\/+$/, '') ?? '';
+}
+
+function buildApiUrl(baseUrl: string, path: string) {
+  if (/^https?:\/\//i.test(path)) return path;
+
+  return `${baseUrl}/${path.replace(/^\/+/, '')}`;
+}
+
+async function readResponsePayload(response: Response): Promise<unknown> {
+  const text = await response.text();
+
+  if (!text) return null;
+
+  try {
+    return JSON.parse(text) as unknown;
+  } catch {
+    return text;
+  }
 }
 
 async function readErrorMessage(response: Response) {
   const fallbackMessage = `Request failed with status ${response.status}`;
+  const payload = await readResponsePayload(response);
 
-  try {
-    const payload = (await response.json()) as { error?: string; message?: string };
-    return payload.error ?? payload.message ?? fallbackMessage;
-  } catch {
+  if (payload && typeof payload === 'object') {
+    const candidate = payload as { error?: unknown; message?: unknown };
+    if (typeof candidate.error === 'string') return candidate.error;
+    if (typeof candidate.message === 'string') return candidate.message;
+  }
+
+  if (typeof payload === 'string' && payload.trim().length > 0) {
     return fallbackMessage;
   }
+
+  return fallbackMessage;
+}
+
+export function getApiErrorMessage(error: unknown, fallbackMessage = 'Something went wrong.') {
+  if (error instanceof ApiError) return error.message;
+  if (error instanceof Error && error.message) return error.message;
+
+  return fallbackMessage;
 }
 
 export async function apiRequest<TResponse>(
@@ -53,10 +84,17 @@ export async function apiRequest<TResponse>(
     headers.set('Authorization', `Bearer ${authToken}`);
   }
 
-  const response = await fetch(`${baseUrl}${path}`, {
-    ...requestOptions,
-    headers,
-  });
+  let response: Response;
+
+  try {
+    response = await fetch(buildApiUrl(baseUrl, path), {
+      credentials: 'include',
+      ...requestOptions,
+      headers,
+    });
+  } catch {
+    throw new ApiError('Unable to reach the WasteLessAI API. Check your connection and API URL.', 0);
+  }
 
   if (!response.ok) {
     throw new ApiError(await readErrorMessage(response), response.status);
@@ -66,5 +104,5 @@ export async function apiRequest<TResponse>(
     return undefined as TResponse;
   }
 
-  return (await response.json()) as TResponse;
+  return (await readResponsePayload(response)) as TResponse;
 }

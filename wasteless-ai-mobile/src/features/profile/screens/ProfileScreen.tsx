@@ -1,24 +1,37 @@
+import { router } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components/ui/Button';
 import { Screen } from '@/components/ui/Screen';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { ROUTES } from '@/navigation/routes';
+import { useAuth } from '@/store/authStore';
 
 export function ProfileScreen() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
+  const { isSubmitting, logout, user } = useAuth();
+
+  async function handleLogout() {
+    await logout();
+    router.replace(ROUTES.login);
+  }
 
   return (
-    <Screen title="Profile" subtitle="Account details and household preferences will appear here.">
+    <Screen title="Profile" subtitle="Account details for your WasteLessAI session.">
       <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         <Text style={[styles.label, { color: colors.mutedText }]}>Signed in as</Text>
-        <Text style={[styles.value, { color: colors.text }]}>Demo User</Text>
-        <Text style={[styles.caption, { color: colors.mutedText }]}>
-          This is placeholder account information until authentication is implemented.
-        </Text>
+        <Text style={[styles.value, { color: colors.text }]}>{user?.name ?? 'Unknown user'}</Text>
+        <Text style={[styles.caption, { color: colors.mutedText }]}>{user?.email ?? ''}</Text>
       </View>
-      <Button title="Sign out" variant="secondary" disabled style={styles.button} />
+      <Button
+        disabled={isSubmitting}
+        title={isSubmitting ? 'Signing out...' : 'Sign out'}
+        variant="secondary"
+        style={styles.button}
+        onPress={handleLogout}
+      />
     </Screen>
   );
 }

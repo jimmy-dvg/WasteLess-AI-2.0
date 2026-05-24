@@ -1,15 +1,11 @@
 ﻿"use server";
 
 import { z } from "zod";
-import bcrypt from "bcrypt";
-import { db } from "@/db";
-import * as schema from "@/db/schema/tables";
 import { cookies } from "next/headers";
-import { signToken } from "@/lib/jwt";
 import { redirect } from "next/navigation";
-import { eq } from "drizzle-orm";
 import { SESSION_COOKIE_NAME } from "@/lib/auth-constants";
 import { isJwtSecretMissingError } from "@/lib/jwt-secret";
+import { loginWithPassword, registerWithPassword } from "@/features/auth/auth.service";
 
 const registerSchema = z.object({
   full_name: z.string().min(2, "Full name must be at least 2 characters").max(100),
@@ -33,21 +29,23 @@ const loginSchema = z.object({
   password: z.string().min(1, "Password is required"),
 });
 
-const DUPLICATE_EMAIL_ERROR = "An account with this email already exists.";
-
-function isUniqueViolation(error: unknown): boolean {
-  if (!error || typeof error !== "object") return false;
-
-  const candidate = error as { code?: unknown; cause?: unknown };
-  if (candidate.code === "23505") return true;
-
-  return isUniqueViolation(candidate.cause);
-}
-
 export type AuthActionState = {
   success: boolean;
   error?: string | null;
 };
+
+async function setSessionCookie(token: string) {
+  const cookieStore = await cookies();
+  cookieStore.set({
+    name: SESSION_COOKIE_NAME,
+    value: token,
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 7,
+  });
+}
 
 export async function registerUser(
   _prevState: AuthActionState,
@@ -66,52 +64,19 @@ export async function registerUser(
   }
 
   try {
-    const password_hash = await bcrypt.hash(parsed.data.password, 10);
-
-    const user = await db.transaction(async (tx) => {
-      const insert = await tx
-        .insert(schema.users)
-        .values({
-          email: parsed.data.email,
-          name: parsed.data.full_name,
-          password_hash,
-        })
-        .onConflictDoNothing({ target: schema.users.email })
-        .returning();
-
-      const created = insert[0];
-      if (!created) return null;
-
-      await tx.insert(schema.profiles).values({
-        id: created.id,
-        email: created.email,
-      });
-
-      return created;
+    const result = await registerWithPassword({
+      name: parsed.data.full_name,
+      email: parsed.data.email,
+      password: parsed.data.password,
     });
 
-    if (!user) {
-      return { success: false, error: DUPLICATE_EMAIL_ERROR };
+    if (!result.success) {
+      return { success: false, error: result.error };
     }
 
-    const token = signToken({ sub: user.id });
-
-    const cookieStore = await cookies();
-    cookieStore.set({
-      name: SESSION_COOKIE_NAME,
-      value: token,
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      path: "/",
-      maxAge: 60 * 60 * 24 * 7,
-    });
+    await setSessionCookie(result.token);
   } catch (error) {
     if (isJwtSecretMissingError(error)) throw error;
-
-    if (isUniqueViolation(error)) {
-      return { success: false, error: DUPLICATE_EMAIL_ERROR };
-    }
 
     return { success: false, error: "Unable to create account" };
   }
@@ -134,37 +99,16 @@ export async function loginUser(
   }
 
   try {
-    const users = await db
-      .select()
-      .from(schema.users)
-      .where(eq(schema.users.email, parsed.data.email))
-      .limit(1);
-    if (users.length === 0) {
-      return { success: false, error: "Invalid email or password" };
-    }
-    const user = users[0];
-
-    if (!user.password_hash) {
-      return { success: false, error: "Account does not have a password set" };
-    }
-
-    const ok = await bcrypt.compare(parsed.data.password, user.password_hash);
-    if (!ok) {
-      return { success: false, error: "Invalid email or password" };
-    }
-
-    const token = signToken({ sub: user.id });
-
-    const cookieStore = await cookies();
-    cookieStore.set({
-      name: SESSION_COOKIE_NAME,
-      value: token,
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      path: "/",
-      maxAge: 60 * 60 * 24 * 7,
+    const result = await loginWithPassword({
+      email: parsed.data.email,
+      password: parsed.data.password,
     });
+
+    if (!result.success) {
+      return { success: false, error: result.error };
+    }
+
+    await setSessionCookie(result.token);
   } catch (error) {
     if (isJwtSecretMissingError(error)) throw error;
 

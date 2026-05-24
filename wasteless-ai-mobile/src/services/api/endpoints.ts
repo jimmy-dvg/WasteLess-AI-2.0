@@ -2,7 +2,8 @@ export const API_ENDPOINTS = {
   auth: {
     login: '/api/auth/login',
     register: '/api/auth/register',
-    profile: '/api/auth/me',
+    logout: '/api/auth/logout',
+    me: '/api/auth/me',
   },
   inventory: {
     list: '/api/inventory',

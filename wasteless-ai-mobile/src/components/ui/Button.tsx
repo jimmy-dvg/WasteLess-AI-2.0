@@ -40,7 +40,7 @@ export function Button({ disabled, style, title, variant = 'primary', ...props }
     <Pressable
       accessibilityRole="button"
       disabled={disabled}
-      style={({ pressed }) => [
+      style={({ pressed }: { pressed: boolean }) => [
         styles.base,
         buttonStyles[variant],
         pressed && !disabled ? styles.pressed : null,

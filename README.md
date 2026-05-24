@@ -179,7 +179,7 @@ NEXTAUTH_SECRET=your-secret-key
 
 **Mobile** (`wasteless-ai-mobile/.env.local`):
 ```
-API_URL=http://localhost:3000
+EXPO_PUBLIC_API_URL=http://localhost:3001
 ```
 
 ⚠️ Never commit secrets to git.
