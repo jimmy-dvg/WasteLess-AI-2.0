@@ -15,7 +15,10 @@ export const API_ENDPOINTS = {
     receipt: '/api/scanning/receipt/ocr',
   },
   recipes: {
-    suggestions: '/api/recipes/suggestions',
+    list: '/api/recipes',
+    generate: '/api/recipes/generate',
+    detail: (id: string) => `/api/recipes/${encodeURIComponent(id)}`,
+    favorite: (id: string) => `/api/recipes/${encodeURIComponent(id)}/favorite`,
   },
 } as const;
 

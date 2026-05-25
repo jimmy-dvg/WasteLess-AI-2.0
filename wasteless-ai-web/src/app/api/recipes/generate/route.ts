@@ -1,14 +1,41 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
-import { generateRecipesForUser } from "@/services/recipes.service";
-import { recipeGenerationRequestSchema } from "@/validation/recipes";
+import { generateRecipesForUser, RecipeGenerationInputError } from "@/services/recipes.service";
+import { recipeGenerationRequestSchema, type RecipeGenerationRequest } from "@/validation/recipes";
 import { RateLimitError } from "@/lib/rate-limit";
+import type { RecipePreferences } from "@/types/recipes";
 
 export const dynamic = "force-dynamic";
 
 function toErrorMessage(error: unknown) {
-  if (error instanceof Error) return error.message;
+  if (error instanceof RecipeGenerationInputError) return error.message;
   return "Recipe generation failed";
+}
+
+function buildPreferencesOverride(
+  payload: RecipeGenerationRequest
+): Partial<RecipePreferences> | undefined {
+  const mobilePreferences = payload.preferences;
+  const mobileOverride: Partial<RecipePreferences> = {};
+
+  if (mobilePreferences) {
+    mobileOverride.mealType = mobilePreferences.mealType;
+    mobileOverride.cuisines = mobilePreferences.cuisine ? [mobilePreferences.cuisine] : undefined;
+    mobileOverride.diets = mobilePreferences.dietary;
+    mobileOverride.maxCookTimeMinutes = mobilePreferences.maxCookingTimeMinutes;
+    mobileOverride.servings = mobilePreferences.servings;
+    mobileOverride.difficulty = mobilePreferences.difficulty;
+  }
+
+  const hasMobileOverride = Object.values(mobileOverride).some((value) =>
+    Array.isArray(value) ? value.length > 0 : value !== undefined
+  );
+  const merged = {
+    ...(hasMobileOverride ? mobileOverride : {}),
+    ...(payload.preferencesOverride ?? {}),
+  };
+
+  return Object.keys(merged).length > 0 ? merged : undefined;
 }
 
 function createSseStream(handler: (send: (event: string, data: unknown) => void) => Promise<void>) {
@@ -51,6 +78,7 @@ export async function POST(request: Request) {
 
   const stream = new URL(request.url).searchParams.get("stream") === "1";
   const payload = parsed.data;
+  const preferencesOverride = buildPreferencesOverride(payload);
 
   if (stream) {
     const sseStream = createSseStream(async (send) => {
@@ -61,8 +89,10 @@ export async function POST(request: Request) {
           maxRecipes: payload.maxRecipes,
           includeExpired: payload.includeExpired,
           inventoryOnly: payload.inventoryOnly,
+          mode: payload.mode,
+          inventoryItemIds: payload.inventoryItemIds,
           excludedRecipeTitles: payload.excludedRecipeTitles,
-          preferencesOverride: payload.preferencesOverride,
+          preferencesOverride,
           streamTokens: true,
           onToken: (token) => send("token", { token }),
         });
@@ -93,12 +123,18 @@ export async function POST(request: Request) {
       maxRecipes: payload.maxRecipes,
       includeExpired: payload.includeExpired,
       inventoryOnly: payload.inventoryOnly,
+      mode: payload.mode,
+      inventoryItemIds: payload.inventoryItemIds,
       excludedRecipeTitles: payload.excludedRecipeTitles,
-      preferencesOverride: payload.preferencesOverride,
+      preferencesOverride,
     });
 
     return NextResponse.json(result, { status: 200 });
   } catch (error) {
+    if (error instanceof RecipeGenerationInputError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+
     if (error instanceof RateLimitError) {
       const retryAfter = Math.max(1, Math.ceil((error.resetAt - Date.now()) / 1000));
       return NextResponse.json(

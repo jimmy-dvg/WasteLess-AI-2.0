@@ -14,7 +14,14 @@ import { hashJson } from "@/lib/hash";
 import { getCachedValue, setCachedValue } from "@/lib/cache";
 import { assertRateLimit } from "@/lib/rate-limit";
 import { recipePreferencesSchema } from "@/validation/recipes";
-import type { RecipeIngredient, RecipeInventoryItem, RecipeListItem, RecipePreferences, RecipeSuggestion } from "@/types/recipes";
+import type {
+  RecipeGenerationMode,
+  RecipeIngredient,
+  RecipeInventoryItem,
+  RecipeListItem,
+  RecipePreferences,
+  RecipeSuggestion,
+} from "@/types/recipes";
 import { and, eq, inArray } from "drizzle-orm";
 
 const DEFAULT_PREFERENCES = recipePreferencesSchema.parse({});
@@ -36,6 +43,13 @@ const PANTRY_STAPLES = new Set([
   "herbs",
 ]);
 
+export class RecipeGenerationInputError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "RecipeGenerationInputError";
+  }
+}
+
 function normalizeName(value: string) {
   return value
     .toLowerCase()
@@ -49,7 +63,7 @@ function isPantryStaple(name: string) {
 }
 
 function toGenerationErrorMessage(error: unknown) {
-  if (error instanceof Error && error.message) return error.message;
+  if (error instanceof RecipeGenerationInputError) return error.message;
   return "AI recipe generation was unavailable.";
 }
 
@@ -63,6 +77,7 @@ function mergePreferences(base: RecipePreferences, override?: Partial<RecipePref
   if (!override) return base;
 
   return {
+    mealType: override.mealType ?? base.mealType,
     cuisines: override.cuisines && override.cuisines.length > 0 ? override.cuisines : base.cuisines,
     diets: override.diets && override.diets.length > 0 ? override.diets : base.diets,
     allergens: override.allergens && override.allergens.length > 0 ? override.allergens : base.allergens,
@@ -72,6 +87,38 @@ function mergePreferences(base: RecipePreferences, override?: Partial<RecipePref
     difficulty: override.difficulty ?? base.difficulty,
     notes: override.notes ?? base.notes,
   };
+}
+
+function filterInventoryForGeneration(params: {
+  inventory: RecipeInventoryItem[];
+  mode: RecipeGenerationMode;
+  inventoryItemIds: string[];
+  includeExpired: boolean;
+}) {
+  if (params.mode === "selected") {
+    const selectedIds = new Set(params.inventoryItemIds);
+    const selectedInventory = params.inventory.filter((item) => selectedIds.has(item.id));
+
+    if (selectedInventory.length === 0) {
+      throw new RecipeGenerationInputError("Selected inventory items are unavailable.");
+    }
+
+    return selectedInventory;
+  }
+
+  if (params.mode === "expiring-soon") {
+    const expiringInventory = params.inventory.filter(
+      (item) => item.status === "expiring" || (params.includeExpired && item.status === "expired")
+    );
+
+    if (expiringInventory.length === 0) {
+      throw new RecipeGenerationInputError("No expiring-soon inventory items are available for recipe generation.");
+    }
+
+    return expiringInventory;
+  }
+
+  return params.inventory;
 }
 
 function limitInventory(items: RecipeInventoryItem[]) {
@@ -274,6 +321,8 @@ export async function generateRecipesForUser(options: {
   maxRecipes: number;
   includeExpired: boolean;
   inventoryOnly?: boolean;
+  mode?: RecipeGenerationMode;
+  inventoryItemIds?: string[];
   excludedRecipeTitles?: string[];
   preferencesOverride?: Partial<RecipePreferences> | undefined;
   streamTokens?: boolean;
@@ -288,11 +337,22 @@ export async function generateRecipesForUser(options: {
   const inventoryOnly = Boolean(options.inventoryOnly);
   const excludedRecipeTitles = options.excludedRecipeTitles ?? [];
   const excludedTitleSet = new Set(excludedRecipeTitles.map(normalizeName));
+  const mode = options.mode ?? "all";
 
   const inventory = await getInventorySnapshot(options.userId);
+  const scopedInventory = filterInventoryForGeneration({
+    inventory,
+    mode,
+    inventoryItemIds: options.inventoryItemIds ?? [],
+    includeExpired: options.includeExpired,
+  });
   const filteredInventory = options.includeExpired
-    ? inventory
-    : inventory.filter((item) => item.status !== "expired");
+    ? scopedInventory
+    : scopedInventory.filter((item) => item.status !== "expired");
+
+  if (scopedInventory.length > 0 && filteredInventory.length === 0) {
+    throw new RecipeGenerationInputError("No usable inventory items are available for recipe generation.");
+  }
 
   const expiringItems = filteredInventory.filter(
     (item) => item.status === "expiring" || (options.includeExpired && item.status === "expired")
@@ -418,7 +478,7 @@ export async function generateRecipesForUser(options: {
   }
 
   if (normalized.length === 0) {
-    throw new Error(
+    throw new RecipeGenerationInputError(
       inventoryOnly
         ? "No inventory-only recipes could be generated from the current pantry. Add more items or turn off inventory-only mode."
         : "No new recipe alternatives could be generated right now."
@@ -532,6 +592,23 @@ export async function toggleSavedRecipe(userId: string, recipeId: string) {
 
   await db.insert(schema.saved_recipes).values({ user_id: userId, recipe_id: recipeId });
   return { saved: true };
+}
+
+export async function saveRecipeForUser(userId: string, recipeId: string) {
+  await db
+    .insert(schema.saved_recipes)
+    .values({ user_id: userId, recipe_id: recipeId })
+    .onConflictDoNothing();
+
+  return { saved: true };
+}
+
+export async function unsaveRecipeForUser(userId: string, recipeId: string) {
+  await db
+    .delete(schema.saved_recipes)
+    .where(and(eq(schema.saved_recipes.user_id, userId), eq(schema.saved_recipes.recipe_id, recipeId)));
+
+  return { saved: false };
 }
 
 export async function getSavedRecipeIds(userId: string, recipeIds: string[]) {

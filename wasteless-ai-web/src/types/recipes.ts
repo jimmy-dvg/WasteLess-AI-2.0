@@ -1,4 +1,6 @@
 export type RecipeDifficulty = "easy" | "medium" | "hard";
+export type RecipeMealType = "breakfast" | "lunch" | "dinner" | "snack";
+export type RecipeGenerationMode = "all" | "selected" | "expiring-soon";
 
 export type RecipeIngredient = {
   name: string;
@@ -40,6 +42,7 @@ export type RecipeAiResponse = {
 };
 
 export type RecipePreferences = {
+  mealType?: RecipeMealType;
   cuisines: string[];
   diets: string[];
   allergens: string[];

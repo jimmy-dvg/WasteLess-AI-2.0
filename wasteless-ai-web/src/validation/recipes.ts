@@ -67,6 +67,7 @@ function normalizeSteps(value: unknown) {
 }
 
 export const recipePreferencesSchema = z.object({
+  mealType: z.enum(["breakfast", "lunch", "dinner", "snack"]).optional(),
   cuisines: z.array(z.string().trim().min(2)).max(10).default([]),
   diets: z.array(z.string().trim().min(2)).max(10).default([]),
   allergens: z.array(z.string().trim().min(2)).max(12).default([]),
@@ -77,12 +78,34 @@ export const recipePreferencesSchema = z.object({
   notes: z.string().trim().max(280).optional(),
 });
 
+export const recipeGenerationModeSchema = z.enum(["all", "selected", "expiring-soon"]);
+
+export const mobileRecipePreferencesSchema = z.object({
+  mealType: z.enum(["breakfast", "lunch", "dinner", "snack"]).optional(),
+  cuisine: optionalString(80),
+  dietary: z.array(z.string().trim().min(2).max(60)).max(10).optional().default([]),
+  maxCookingTimeMinutes: z.number().int().min(5).max(240).optional(),
+  servings: z.number().int().min(1).max(12).optional(),
+  difficulty: z.enum(["easy", "medium", "hard"]).optional(),
+});
+
 export const recipeGenerationRequestSchema = z.object({
   maxRecipes: z.coerce.number().int().min(1).max(6).optional().default(3),
   includeExpired: z.boolean().optional().default(false),
   inventoryOnly: z.boolean().optional().default(false),
   excludedRecipeTitles: z.array(z.string().trim().min(3).max(120)).max(12).optional().default([]),
+  mode: recipeGenerationModeSchema.optional().default("all"),
+  inventoryItemIds: z.array(z.string().uuid()).max(60).optional().default([]),
+  preferences: mobileRecipePreferencesSchema.optional(),
   preferencesOverride: recipePreferencesSchema.partial().optional(),
+}).superRefine((value, context) => {
+  if (value.mode === "selected" && value.inventoryItemIds.length === 0) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["inventoryItemIds"],
+      message: "Select at least one inventory item.",
+    });
+  }
 });
 
 const recipeIngredientSchema = z.preprocess((value) => {
