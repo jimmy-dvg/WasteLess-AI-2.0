@@ -1,3 +1,3 @@
-import { ScanScreen } from '@/features/scan/screens/ScanScreen';
+import { ScanScreen } from '@/features/scanner/screens/ScanScreen';
 
 export default ScanScreen;
