@@ -261,13 +261,24 @@ export const shopping_list_items = pgTable("shopping_list_items", {
   id: uuid("id").defaultRandom().primaryKey(),
   shopping_list_id: uuid("shopping_list_id").notNull(),
   product_id: uuid("product_id"),
+  created_by: uuid("created_by"),
   name: text("name").notNull(),
   quantity: numeric("quantity").default("1"),
   unit: varchar("unit", { length: 32 }),
+  category: text("category"),
+  note: text("note"),
   checked: boolean("checked").default(false),
+  source: varchar("source", { length: 32 }).default("manual").notNull(),
+  recipe_id: uuid("recipe_id"),
+  inventory_item_id: uuid("inventory_item_id"),
   created_at: timestamp("created_at").defaultNow().notNull(),
   updated_at: timestamp("updated_at").defaultNow().notNull(),
-});
+}, (table) => ({
+  listIdx: index("shopping_list_items_list_id_idx").on(table.shopping_list_id),
+  sourceIdx: index("shopping_list_items_source_idx").on(table.source),
+  recipeIdx: index("shopping_list_items_recipe_id_idx").on(table.recipe_id),
+  inventoryItemIdx: index("shopping_list_items_inventory_item_id_idx").on(table.inventory_item_id),
+}));
 
 export const recipes = pgTable("recipes", {
   id: uuid("id").defaultRandom().primaryKey(),

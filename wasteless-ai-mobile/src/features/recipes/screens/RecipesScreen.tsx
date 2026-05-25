@@ -14,6 +14,7 @@ import { Screen } from '@/components/ui/Screen';
 import { Colors } from '@/constants/theme';
 import { listInventoryItems } from '@/features/inventory/api';
 import type { InventoryItem } from '@/features/inventory/types';
+import { generateShoppingList } from '@/features/shopping/api';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { getApiErrorMessage } from '@/services/api/client';
 import { useAuth } from '@/store/authStore';
@@ -191,6 +192,7 @@ export function RecipesScreen() {
   const [expandedRecipeId, setExpandedRecipeId] = useState<string | null>(null);
   const [loadingDetailId, setLoadingDetailId] = useState<string | null>(null);
   const [savingRecipeId, setSavingRecipeId] = useState<string | null>(null);
+  const [addingMissingRecipeId, setAddingMissingRecipeId] = useState<string | null>(null);
   const [regeneratingRecipeId, setRegeneratingRecipeId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -443,6 +445,49 @@ export function RecipesScreen() {
     }
   }
 
+  async function handleAddMissingToShopping(recipe: RecipeSuggestion) {
+    if (!token || addingMissingRecipeId) return;
+
+    const activeRecipe = detailsById[recipe.id] ?? recipe;
+
+    if (activeRecipe.missingIngredients.length === 0) {
+      setError('No missing ingredients for this recipe.');
+      return;
+    }
+
+    setAddingMissingRecipeId(recipe.id);
+    setError(null);
+
+    try {
+      const result = await generateShoppingList(token, {
+        recipes: [
+          {
+            recipeId: recipe.id,
+            title: recipe.title,
+            missingIngredients: activeRecipe.missingIngredients.map((ingredient) => ({
+              name: ingredient.name,
+              quantity: ingredient.quantity ?? null,
+              unit: ingredient.unit ?? null,
+              note: ingredient.notes ?? recipe.title,
+            })),
+          },
+        ],
+        includeRecipeMissing: true,
+        includeLowStock: false,
+      });
+
+      setSummary(
+        result.insertedCount > 0
+          ? `${result.insertedCount} missing ingredient${result.insertedCount === 1 ? '' : 's'} added to shopping.`
+          : 'Those missing ingredients are already on your shopping list.',
+      );
+    } catch (requestError) {
+      setError(getApiErrorMessage(requestError, 'Unable to add missing ingredients to shopping.'));
+    } finally {
+      setAddingMissingRecipeId(null);
+    }
+  }
+
   return (
     <Screen
       contentContainerStyle={styles.screenContent}
@@ -613,10 +658,14 @@ export function RecipesScreen() {
                   detail={detailsById[recipe.id]}
                   detailError={detailErrors[recipe.id]}
                   isExpanded={expandedRecipeId === recipe.id}
+                  isAddingMissing={addingMissingRecipeId === recipe.id}
                   isLoadingDetail={loadingDetailId === recipe.id}
                   isSaving={savingRecipeId === recipe.id}
                   key={`favorite-${recipe.id}`}
                   recipe={recipe}
+                  onAddMissingToShopping={(item) => {
+                    void handleAddMissingToShopping(item);
+                  }}
                   onFavorite={handleFavorite}
                   onToggle={(item) => {
                     void handleToggleRecipe(item);
@@ -652,10 +701,14 @@ export function RecipesScreen() {
                 detail={detailsById[recipe.id]}
                 detailError={detailErrors[recipe.id]}
                 isExpanded={expandedRecipeId === recipe.id}
+                isAddingMissing={addingMissingRecipeId === recipe.id}
                 isLoadingDetail={loadingDetailId === recipe.id}
                 isSaving={savingRecipeId === recipe.id}
                 key={recipe.id}
                 recipe={recipe}
+                onAddMissingToShopping={(item) => {
+                  void handleAddMissingToShopping(item);
+                }}
                 onFavorite={handleFavorite}
                 onRegenerate={
                   regeneratingRecipeId === recipe.id

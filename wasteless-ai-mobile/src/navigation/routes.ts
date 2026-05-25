@@ -7,5 +7,6 @@ export const ROUTES = {
   inventory: '/inventory',
   scan: '/scan',
   recipes: '/recipes',
+  shoppingList: '/shopping-list',
   profile: '/profile',
 } as const satisfies Record<string, Href>;

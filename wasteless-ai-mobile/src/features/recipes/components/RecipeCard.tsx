@@ -16,8 +16,10 @@ type RecipeCardProps = {
   detail?: RecipeSuggestion | null;
   detailError?: string | null;
   isExpanded: boolean;
+  isAddingMissing?: boolean;
   isLoadingDetail?: boolean;
   isSaving?: boolean;
+  onAddMissingToShopping?: (recipe: RecipeSuggestion) => void;
   onFavorite: (recipe: RecipeSuggestion) => void;
   onRegenerate?: (recipe: RecipeSuggestion) => void;
   onToggle: (recipe: RecipeSuggestion) => void;
@@ -98,9 +100,11 @@ function IngredientsList({
 export function RecipeCard({
   detail,
   detailError,
+  isAddingMissing = false,
   isExpanded,
   isLoadingDetail = false,
   isSaving = false,
+  onAddMissingToShopping,
   onFavorite,
   onRegenerate,
   onToggle,
@@ -170,6 +174,27 @@ export function RecipeCard({
           <Text style={[styles.matchText, { color: colors.mutedText }]}>
             {Math.round(recipe.score)} match
           </Text>
+        ) : null}
+
+        {onAddMissingToShopping && missingCount > 0 ? (
+          <Pressable
+            accessibilityRole="button"
+            disabled={isAddingMissing}
+            onPress={() => onAddMissingToShopping(recipe)}
+            style={({ pressed }: { pressed: boolean }) => [
+              styles.actionButton,
+              styles.secondaryAction,
+              { borderColor: colors.border },
+              pressed && !isAddingMissing ? styles.pressed : null,
+              isAddingMissing ? styles.disabled : null,
+            ]}>
+            {isAddingMissing ? (
+              <ActivityIndicator color={colors.tint} size="small" />
+            ) : (
+              <Ionicons name="cart-outline" size={18} color={colors.tint} />
+            )}
+            <Text style={[styles.secondaryActionText, { color: colors.tint }]}>Add gaps</Text>
+          </Pressable>
         ) : null}
       </View>
 
@@ -379,6 +404,7 @@ const styles = StyleSheet.create({
   },
   actions: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 10,
   },
   actionButton: {

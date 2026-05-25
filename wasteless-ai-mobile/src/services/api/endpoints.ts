@@ -20,6 +20,13 @@ export const API_ENDPOINTS = {
     detail: (id: string) => `/api/recipes/${encodeURIComponent(id)}`,
     favorite: (id: string) => `/api/recipes/${encodeURIComponent(id)}/favorite`,
   },
+  shoppingList: {
+    list: '/api/shopping-list',
+    create: '/api/shopping-list',
+    item: (id: string) => `/api/shopping-list/${encodeURIComponent(id)}`,
+    clearChecked: '/api/shopping-list/clear-checked',
+    generate: '/api/shopping-list/generate',
+  },
 } as const;
 
 export type ApiEndpoints = typeof API_ENDPOINTS;
