@@ -8,6 +8,7 @@ export const API_ENDPOINTS = {
   inventory: {
     list: '/api/inventory',
     create: '/api/inventory',
+    item: (id: string) => `/api/inventory/${encodeURIComponent(id)}`,
   },
   recipes: {
     suggestions: '/api/recipes/suggestions',
