@@ -17,12 +17,12 @@ const MODE_CONTENT = {
   product: {
     icon: 'cube-outline',
     title: 'Product photo',
-    copy: 'Capture the front label, expiration date, or packaging details for a future product recognition step.',
+    copy: 'Capture the front label, expiration date, or packaging details.',
   },
   receipt: {
     icon: 'receipt-outline',
     title: 'Receipt photo',
-    copy: 'Capture a clear receipt image so OCR and receipt parsing can be added in the next scanner milestone.',
+    copy: 'Capture a clear receipt image for OCR and item recognition.',
   },
 } as const;
 
@@ -41,10 +41,6 @@ export function ScannerEmptyState({
       <Ionicons name={content.icon} size={34} color={colors.tint} />
       <Text style={[styles.title, { color: colors.text }]}>{content.title}</Text>
       <Text style={[styles.copy, { color: colors.mutedText }]}>{content.copy}</Text>
-      <Text style={[styles.note, { color: colors.mutedText }]}>
-        Images stay local in this step. AI recognition and uploads are not active yet.
-      </Text>
-
       <View style={styles.actions}>
         <Button title="Open camera" onPress={onOpenCamera} style={styles.actionButton} />
         <Button
@@ -73,10 +69,6 @@ const styles = StyleSheet.create({
   copy: {
     fontSize: 15,
     lineHeight: 22,
-  },
-  note: {
-    fontSize: 13,
-    lineHeight: 19,
   },
   actions: {
     gap: 10,

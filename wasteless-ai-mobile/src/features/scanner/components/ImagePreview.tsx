@@ -1,4 +1,4 @@
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Image, StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components/ui/Button';
 import { Colors } from '@/constants/theme';
@@ -44,9 +44,16 @@ export function ImagePreview({
         <Text style={[styles.modeLabel, { color: colors.mutedText }]}>Selected mode</Text>
         <Text style={[styles.modeValue, { color: colors.text }]}>{MODE_LABELS[mode]}</Text>
         <Text style={[styles.copy, { color: colors.mutedText }]}>
-          Review the image before future recognition. This foundation does not upload, store, or
-          analyze the image yet.
+          Confirm this image to analyze it and review recognized inventory items before saving.
         </Text>
+        {isProcessing ? (
+          <View accessibilityLiveRegion="polite" style={styles.processing}>
+            <ActivityIndicator color={colors.tint} />
+            <Text style={[styles.processingText, { color: colors.mutedText }]}>
+              Analyzing image...
+            </Text>
+          </View>
+        ) : null}
         {placeholderMessage ? (
           <Text accessibilityLiveRegion="polite" style={[styles.placeholder, { color: colors.tint }]}>
             {placeholderMessage}
@@ -57,7 +64,7 @@ export function ImagePreview({
       <View style={styles.actions}>
         <Button
           disabled={isProcessing || Boolean(placeholderMessage)}
-          title={isProcessing ? 'Preparing preview...' : 'Use this image'}
+          title={isProcessing ? 'Analyzing...' : 'Use this image'}
           onPress={onUseImage}
         />
         <Button
@@ -110,6 +117,15 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     lineHeight: 20,
+  },
+  processing: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 10,
+  },
+  processingText: {
+    fontSize: 14,
+    fontWeight: '700',
   },
   actions: {
     gap: 10,

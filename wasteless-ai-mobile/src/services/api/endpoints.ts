@@ -10,6 +10,10 @@ export const API_ENDPOINTS = {
     create: '/api/inventory',
     item: (id: string) => `/api/inventory/${encodeURIComponent(id)}`,
   },
+  scanner: {
+    product: '/api/scanning/photo/analyze',
+    receipt: '/api/scanning/receipt/ocr',
+  },
   recipes: {
     suggestions: '/api/recipes/suggestions',
   },

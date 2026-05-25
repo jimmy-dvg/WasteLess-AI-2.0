@@ -1,10 +1,10 @@
 const DEFAULT_HEADERS = {
   Accept: 'application/json',
-  'Content-Type': 'application/json',
 };
 
 export type ApiRequestOptions = RequestInit & {
   authToken?: string;
+  contentType?: 'json' | 'form-data';
 };
 
 export class ApiError extends Error {
@@ -73,8 +73,12 @@ export async function apiRequest<TResponse>(
     throw new ApiError('EXPO_PUBLIC_API_URL is not configured.', 0);
   }
 
-  const { authToken, headers: customHeaders, ...requestOptions } = options;
+  const { authToken, contentType = 'json', headers: customHeaders, ...requestOptions } = options;
   const headers = new Headers(DEFAULT_HEADERS);
+
+  if (contentType === 'json') {
+    headers.set('Content-Type', 'application/json');
+  }
 
   new Headers(customHeaders).forEach((value, key) => {
     headers.set(key, value);

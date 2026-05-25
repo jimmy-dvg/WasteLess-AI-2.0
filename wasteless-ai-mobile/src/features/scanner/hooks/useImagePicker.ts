@@ -57,6 +57,7 @@ export function useImagePicker() {
           width: asset.width,
           height: asset.height,
           fileName: asset.fileName ?? undefined,
+          fileSize: asset.fileSize ?? undefined,
           mimeType: asset.mimeType,
         },
         error: null,
