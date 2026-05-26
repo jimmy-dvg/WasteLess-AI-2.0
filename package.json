@@ -12,10 +12,19 @@
   ],
   "scripts": {
     "dev": "concurrently \"npm -w wasteless-ai-web run dev -- -p 3001\" \"npm -w wasteless-ai-mobile run web -- --port 8083\"",
-    "build": "npm -w wasteless-ai-web run build"
+    "build": "npm -w wasteless-ai-web run build",
+    "lint": "npm -w wasteless-ai-web run lint && npm -w wasteless-ai-mobile run lint",
+    "test": "npm -w wasteless-ai-web run test && npm -w wasteless-ai-mobile run test",
+    "test:coverage": "npm -w wasteless-ai-web run test:coverage && npm -w wasteless-ai-mobile run test:coverage",
+    "test:e2e": "npm -w wasteless-ai-web run test:e2e",
+    "qa": "npm run lint && npm run test && npm run build && npm run test:e2e"
   },
   "devDependencies": {
+    "@playwright/test": "^1.60.0",
     "@types/react": "^19.1.17",
-    "concurrently": "^8.2.2"
+    "@vitest/coverage-v8": "^4.1.7",
+    "concurrently": "^8.2.2",
+    "start-server-and-test": "^3.0.5",
+    "vitest": "^4.1.7"
   }
 }

@@ -20,20 +20,56 @@ export default function RegisterForm() {
         </p>
       ) : null}
       <div>
-        <label className="block text-sm font-medium text-slate-700">Full name</label>
-        <input name="full_name" type="text" required className="mt-1 block w-full rounded-md border p-2" />
+        <label htmlFor="register-full-name" className="block text-sm font-medium text-slate-700">
+          Full name
+        </label>
+        <input
+          id="register-full-name"
+          name="full_name"
+          type="text"
+          autoComplete="name"
+          required
+          className="mt-1 block w-full rounded-md border p-2"
+        />
       </div>
       <div>
-        <label className="block text-sm font-medium text-slate-700">Email</label>
-        <input name="email" type="email" required className="mt-1 block w-full rounded-md border p-2" />
+        <label htmlFor="register-email" className="block text-sm font-medium text-slate-700">
+          Email
+        </label>
+        <input
+          id="register-email"
+          name="email"
+          type="email"
+          autoComplete="email"
+          required
+          className="mt-1 block w-full rounded-md border p-2"
+        />
       </div>
       <div>
-        <label className="block text-sm font-medium text-slate-700">Password</label>
-        <input name="password" type="password" required className="mt-1 block w-full rounded-md border p-2" />
+        <label htmlFor="register-password" className="block text-sm font-medium text-slate-700">
+          Password
+        </label>
+        <input
+          id="register-password"
+          name="password"
+          type="password"
+          autoComplete="new-password"
+          required
+          className="mt-1 block w-full rounded-md border p-2"
+        />
       </div>
       <div>
-        <label className="block text-sm font-medium text-slate-700">Confirm password</label>
-        <input name="confirm_password" type="password" required className="mt-1 block w-full rounded-md border p-2" />
+        <label htmlFor="register-confirm-password" className="block text-sm font-medium text-slate-700">
+          Confirm password
+        </label>
+        <input
+          id="register-confirm-password"
+          name="confirm_password"
+          type="password"
+          autoComplete="new-password"
+          required
+          className="mt-1 block w-full rounded-md border p-2"
+        />
       </div>
       <div>
         <button
