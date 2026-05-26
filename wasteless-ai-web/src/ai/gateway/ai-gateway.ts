@@ -28,14 +28,51 @@ type GenerateOptions = {
   allowFallback?: boolean;
 };
 
+type AIGatewayRuntime = {
+  config: ReturnType<typeof getAIGatewayConfig>;
+  providers: AIProvider[];
+  health: ProviderHealthMonitor;
+  semaphore: ReturnType<typeof createSemaphore>;
+  semanticCache: SemanticCache | null;
+};
+
 export class AIGateway {
-  private config = getAIGatewayConfig();
-  private providers = createProviderRegistry(this.config);
-  private health = new ProviderHealthMonitor();
-  private semaphore = createSemaphore(this.config.maxConcurrency);
-  private semanticCache = this.config.enableSemanticCache
-    ? new SemanticCache({ threshold: this.config.semanticThreshold })
-    : null;
+  private runtime: AIGatewayRuntime | null = null;
+
+  private getRuntime() {
+    if (this.runtime) return this.runtime;
+
+    const config = getAIGatewayConfig();
+    this.runtime = {
+      config,
+      providers: createProviderRegistry(config),
+      health: new ProviderHealthMonitor(),
+      semaphore: createSemaphore(config.maxConcurrency),
+      semanticCache: config.enableSemanticCache ? new SemanticCache({ threshold: config.semanticThreshold }) : null,
+    };
+
+    return this.runtime;
+  }
+
+  private get config() {
+    return this.getRuntime().config;
+  }
+
+  private get providers() {
+    return this.getRuntime().providers;
+  }
+
+  private get health() {
+    return this.getRuntime().health;
+  }
+
+  private get semaphore() {
+    return this.getRuntime().semaphore;
+  }
+
+  private get semanticCache() {
+    return this.getRuntime().semanticCache;
+  }
 
   async generateText(request: AITextRequest, options: GenerateOptions = {}): Promise<AITextResponse> {
     const normalized = this.normalizeRequest(request);
