@@ -4,6 +4,11 @@ WasteLessAI is an AI-assisted household inventory platform that helps people red
 
 The main problem it solves: households often lose track of what they already own, what expires soon, and what can be cooked before it becomes waste. WasteLessAI keeps that information visible and actionable.
 
+## Live Links
+
+- Web app and API origin: <https://wasteless-ai-web.vercel.app>
+- Mobile web preview: <https://wasteless-ai-mobile.vercel.app>
+
 ## Core Features
 
 - Cookie-based user authentication with JWT sessions and bcrypt password hashing

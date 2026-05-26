@@ -15,6 +15,11 @@ For local API access, set:
 EXPO_PUBLIC_API_URL=http://localhost:3001
 ```
 
+## Live Links
+
+- Mobile web preview: <https://wasteless-ai-mobile.vercel.app>
+- Web app and API origin: <https://wasteless-ai-web.vercel.app>
+
 ## Scripts
 
 - `npm run start` - start Expo

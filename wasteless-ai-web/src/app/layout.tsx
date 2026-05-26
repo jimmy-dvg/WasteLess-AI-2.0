@@ -20,6 +20,13 @@ export const metadata: Metadata = {
     "Smart inventory tracking, expiration monitoring, and AI-powered recipe recommendations to reduce food waste and save money.",
   keywords:
     "food waste, meal planning, AI recipes, pantry tracking, sustainability",
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/icon.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [{ url: "/apple-icon.png", sizes: "180x180", type: "image/png" }],
+  },
   openGraph: {
     title: "WasteLessAI - Reduce Food Waste with AI",
     description:
