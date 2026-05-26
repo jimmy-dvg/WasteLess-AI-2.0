@@ -428,6 +428,31 @@ export const notifications = pgTable("notifications", {
   updated_at: timestamp("updated_at").defaultNow().notNull(),
 });
 
+export const notification_push_tokens = pgTable(
+  "notification_push_tokens",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    user_id: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    household_id: uuid("household_id").references(() => households.id, { onDelete: "cascade" }),
+    expo_push_token: varchar("expo_push_token", { length: 512 }).notNull(),
+    device_id: varchar("device_id", { length: 256 }),
+    platform: varchar("platform", { length: 32 }),
+    device_name: text("device_name"),
+    status: varchar("status", { length: 32 }).default("active").notNull(),
+    last_registered_at: timestamp("last_registered_at").defaultNow().notNull(),
+    created_at: timestamp("created_at").defaultNow().notNull(),
+    updated_at: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    tokenUnique: uniqueIndex("notification_push_tokens_token_unique").on(table.expo_push_token),
+    userIdx: index("notification_push_tokens_user_id_idx").on(table.user_id),
+    householdIdx: index("notification_push_tokens_household_id_idx").on(table.household_id),
+    statusIdx: index("notification_push_tokens_status_idx").on(table.status),
+  })
+);
+
 export const waste_logs = pgTable("waste_logs", {
   id: uuid("id").defaultRandom().primaryKey(),
   household_id: uuid("household_id").notNull(),

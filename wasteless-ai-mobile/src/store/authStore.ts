@@ -10,6 +10,7 @@ import {
 import type { PropsWithChildren } from 'react';
 
 import { getApiErrorMessage } from '@/services/api/client';
+import { unregisterDeviceForPushNotifications } from '@/features/notifications/deviceNotifications';
 import {
   getCurrentUser as getCurrentUserRequest,
   login as loginRequest,
@@ -135,6 +136,9 @@ export function AuthProvider({ children }: PropsWithChildren) {
     setError(null);
 
     try {
+      if (token) {
+        await unregisterDeviceForPushNotifications(token).catch(() => undefined);
+      }
       await logoutRequest(token);
     } catch {
       // Local session cleanup is still required when the network request fails.

@@ -12,7 +12,7 @@ import {
   type NotificationType,
 } from "@/features/notifications/constants";
 import { notificationSettingsSchema } from "@/validation/notifications";
-import { and, asc, count, desc, eq, gte, isNull, lt, ne, or } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, inArray, isNull, lt, lte, ne, or } from "drizzle-orm";
 
 export type NotificationPayload = {
   key?: string;
@@ -57,6 +57,8 @@ export type NotificationCenterData = {
 export type NotificationCheckResult = {
   usersChecked: number;
   created: number;
+  expoPushSent: number;
+  expoPushFailed: number;
   byType: Record<string, number>;
 };
 
@@ -94,6 +96,11 @@ function normalizeNotificationSettings(raw: unknown): NotificationSettings {
   const defaults = DEFAULT_NOTIFICATION_SETTINGS;
   const candidate = {
     expirationReminders: toBoolean(record.expirationReminders ?? record.expiration_reminders, defaults.expirationReminders),
+    expiredItemReminders: toBoolean(
+      record.expiredItemReminders ?? record.expired_item_reminders,
+      defaults.expiredItemReminders
+    ),
+    lowStockReminders: toBoolean(record.lowStockReminders ?? record.low_stock_reminders, defaults.lowStockReminders),
     useTodayAlerts: toBoolean(record.useTodayAlerts ?? record.use_today_alerts, defaults.useTodayAlerts),
     mealPlanReminders: toBoolean(record.mealPlanReminders ?? record.meal_plan_reminders, defaults.mealPlanReminders),
     shoppingReminders: toBoolean(record.shoppingReminders ?? record.shopping_reminders, defaults.shoppingReminders),
@@ -206,6 +213,178 @@ async function createNotificationIfMissing(input: CreateNotificationInput) {
 function incrementType(result: NotificationCheckResult, type: NotificationType) {
   result.created += 1;
   result.byType[type] = (result.byType[type] ?? 0) + 1;
+}
+
+const EXPO_PUSH_SEND_URL = "https://exp.host/--/api/v2/push/send";
+const EXPO_PUSH_CHUNK_SIZE = 100;
+
+type ExpoPushTicket = {
+  status?: string;
+  id?: string;
+  message?: string;
+  details?: {
+    error?: string;
+  };
+};
+
+type OutboundExpoPushMessage = {
+  notificationId: string;
+  token: string;
+  message: {
+    to: string;
+    title: string;
+    body: string;
+    sound: "default";
+    channelId: string;
+    priority: "default";
+    data: Record<string, string>;
+  };
+};
+
+function chunk<T>(items: T[], size: number) {
+  const chunks: T[][] = [];
+  for (let index = 0; index < items.length; index += size) {
+    chunks.push(items.slice(index, index + size));
+  }
+  return chunks;
+}
+
+function isExpoPushEnabled(payload: NotificationPayload) {
+  return payload.channels?.expoPush === true;
+}
+
+async function postExpoPushMessages(messages: OutboundExpoPushMessage[]) {
+  const response = await fetch(EXPO_PUSH_SEND_URL, {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(messages.map((item) => item.message)),
+  }).catch(() => null);
+
+  if (!response?.ok) {
+    return messages.map<ExpoPushTicket>(() => ({ status: "error", message: "Expo push request failed" }));
+  }
+
+  const payload = (await response.json().catch(() => null)) as { data?: ExpoPushTicket[] | ExpoPushTicket } | null;
+  if (Array.isArray(payload?.data)) return payload.data;
+  if (payload?.data) return [payload.data];
+
+  return messages.map<ExpoPushTicket>(() => ({ status: "error", message: "Invalid Expo push response" }));
+}
+
+async function sendDueExpoPushNotificationsForUser(userId: string) {
+  const now = new Date();
+  const [notificationRows, tokenRows] = await Promise.all([
+    db
+      .select({
+        id: schema.notifications.id,
+        type: schema.notifications.type,
+        payload: schema.notifications.payload,
+      })
+      .from(schema.notifications)
+      .where(
+        and(
+          eq(schema.notifications.user_id, userId),
+          isNull(schema.notifications.sent_at),
+          or(isNull(schema.notifications.scheduled_at), lte(schema.notifications.scheduled_at, now))
+        )
+      )
+      .orderBy(asc(schema.notifications.scheduled_at), asc(schema.notifications.created_at))
+      .limit(25),
+    db
+      .select({
+        token: schema.notification_push_tokens.expo_push_token,
+      })
+      .from(schema.notification_push_tokens)
+      .where(
+        and(
+          eq(schema.notification_push_tokens.user_id, userId),
+          eq(schema.notification_push_tokens.status, "active")
+        )
+      )
+      .limit(10),
+  ]);
+
+  if (notificationRows.length === 0 || tokenRows.length === 0) {
+    return { sent: 0, failed: 0 };
+  }
+
+  const outboundMessages: OutboundExpoPushMessage[] = [];
+  for (const notification of notificationRows) {
+    const payload = parseJsonValue<NotificationPayload>(notification.payload, {});
+    if (!isExpoPushEnabled(payload)) continue;
+
+    for (const token of tokenRows) {
+      outboundMessages.push({
+        notificationId: notification.id,
+        token: token.token,
+        message: {
+          to: token.token,
+          title: payload.title ?? getNotificationTypeLabel(notification.type),
+          body: payload.body ?? "Open WasteLessAI for details.",
+          sound: "default",
+          channelId: "reminders",
+          priority: "default",
+          data: {
+            notificationId: notification.id,
+            type: notification.type,
+            href: payload.href ?? "/dashboard",
+            key: payload.key ?? notification.id,
+          },
+        },
+      });
+    }
+  }
+
+  if (outboundMessages.length === 0) {
+    return { sent: 0, failed: 0 };
+  }
+
+  let sent = 0;
+  let failed = 0;
+  const sentNotificationIds = new Set<string>();
+  const inactiveTokens = new Set<string>();
+
+  for (const messageChunk of chunk(outboundMessages, EXPO_PUSH_CHUNK_SIZE)) {
+    const tickets = await postExpoPushMessages(messageChunk);
+    tickets.forEach((ticket, index) => {
+      const message = messageChunk[index];
+      if (!message) return;
+
+      if (ticket.status === "ok") {
+        sent += 1;
+        sentNotificationIds.add(message.notificationId);
+        return;
+      }
+
+      failed += 1;
+      if (ticket.details?.error === "DeviceNotRegistered") {
+        inactiveTokens.add(message.token);
+      }
+    });
+  }
+
+  const sentIds = Array.from(sentNotificationIds);
+  const disabledTokens = Array.from(inactiveTokens);
+
+  await Promise.all([
+    sentIds.length > 0
+      ? db
+          .update(schema.notifications)
+          .set({ sent_at: now, updated_at: now })
+          .where(inArray(schema.notifications.id, sentIds))
+      : Promise.resolve(),
+    disabledTokens.length > 0
+      ? db
+          .update(schema.notification_push_tokens)
+          .set({ status: "inactive", updated_at: now })
+          .where(inArray(schema.notification_push_tokens.expo_push_token, disabledTokens))
+      : Promise.resolve(),
+  ]);
+
+  return { sent, failed };
 }
 
 export async function getNotificationSettingsForUser(userId: string) {
@@ -344,6 +523,8 @@ export async function runNotificationChecksForUser(userId: string): Promise<Noti
   const result: NotificationCheckResult = {
     usersChecked: 1,
     created: 0,
+    expoPushSent: 0,
+    expoPushFailed: 0,
     byType: {},
   };
 
@@ -423,6 +604,68 @@ export async function runNotificationChecksForUser(userId: string): Promise<Noti
         dedupeSince: today,
       });
       if (created) incrementType(result, "expiration_reminder");
+    }
+  }
+
+  if (settings.expiredItemReminders) {
+    const expiredItems = await db
+      .select({
+        id: schema.products.id,
+        name: schema.products.name,
+        expirationDate: schema.products.expiration_date,
+      })
+      .from(schema.products)
+      .where(and(getHouseholdProductAccessCondition(userId, household.id), lt(schema.products.expiration_date, today)))
+      .orderBy(desc(schema.products.expiration_date), asc(schema.products.name))
+      .limit(5);
+
+    for (const item of expiredItems) {
+      const created = await createNotificationIfMissing({
+        userId,
+        householdId: household.id,
+        type: "expired_item_reminder",
+        key: `expired_item_reminder:${item.id}:${formatKeyDate(today)}`,
+        title: `${item.name} is expired`,
+        body: `${item.name} expired ${formatRelativeExpiration(item.expirationDate).toLowerCase()}. Check it before use.`,
+        href: `/dashboard/inventory/${item.id}`,
+        actionLabel: "View item",
+        severity: "critical",
+        settings,
+        dedupeSince: today,
+      });
+      if (created) incrementType(result, "expired_item_reminder");
+    }
+  }
+
+  if (settings.lowStockReminders) {
+    const lowStockItems = await db
+      .select({
+        id: schema.products.id,
+        name: schema.products.name,
+        quantity: schema.products.quantity,
+        unit: schema.products.unit,
+      })
+      .from(schema.products)
+      .where(and(getHouseholdProductAccessCondition(userId, household.id), lte(schema.products.quantity, "1")))
+      .orderBy(asc(schema.products.name))
+      .limit(5);
+
+    for (const item of lowStockItems) {
+      const quantityLabel = [item.quantity ?? "0", item.unit].filter(Boolean).join(" ");
+      const created = await createNotificationIfMissing({
+        userId,
+        householdId: household.id,
+        type: "low_stock_reminder",
+        key: `low_stock_reminder:${item.id}:${formatKeyDate(today)}`,
+        title: `${item.name} is running low`,
+        body: quantityLabel ? `${quantityLabel} remaining. Add it to your shopping list if needed.` : "Add it to your shopping list if needed.",
+        href: "/dashboard/shopping",
+        actionLabel: "Open shopping",
+        severity: "warning",
+        settings,
+        dedupeSince: today,
+      });
+      if (created) incrementType(result, "low_stock_reminder");
     }
   }
 
@@ -565,6 +808,10 @@ export async function runNotificationChecksForUser(userId: string): Promise<Noti
     if (created) incrementType(result, digestType);
   }
 
+  const pushResult = await sendDueExpoPushNotificationsForUser(userId);
+  result.expoPushSent = pushResult.sent;
+  result.expoPushFailed = pushResult.failed;
+
   return result;
 }
 
@@ -579,6 +826,8 @@ export async function runNotificationChecksForAllUsers(): Promise<NotificationCh
   const aggregate: NotificationCheckResult = {
     usersChecked: 0,
     created: 0,
+    expoPushSent: 0,
+    expoPushFailed: 0,
     byType: {},
   };
 
@@ -586,6 +835,8 @@ export async function runNotificationChecksForAllUsers(): Promise<NotificationCh
     const result = await runNotificationChecksForUser(userId);
     aggregate.usersChecked += result.usersChecked;
     aggregate.created += result.created;
+    aggregate.expoPushSent += result.expoPushSent;
+    aggregate.expoPushFailed += result.expoPushFailed;
     Object.entries(result.byType).forEach(([type, value]) => {
       aggregate.byType[type] = (aggregate.byType[type] ?? 0) + value;
     });

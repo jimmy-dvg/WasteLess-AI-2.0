@@ -27,6 +27,10 @@ export const API_ENDPOINTS = {
     clearChecked: '/api/shopping-list/clear-checked',
     generate: '/api/shopping-list/generate',
   },
+  notifications: {
+    preferences: '/api/notifications/preferences',
+    pushToken: '/api/notifications/push-token',
+  },
 } as const;
 
 export type ApiEndpoints = typeof API_ENDPOINTS;

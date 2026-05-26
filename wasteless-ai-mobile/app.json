@@ -51,7 +51,8 @@
         {
           "photosPermission": "Allow WasteLessAI to choose product and receipt photos from your library."
         }
-      ]
+      ],
+      "expo-notifications"
     ],
     "experiments": {
       "typedRoutes": true,

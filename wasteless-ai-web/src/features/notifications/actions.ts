@@ -31,6 +31,8 @@ export async function updateNotificationSettingsAction(
 ): Promise<NotificationActionState> {
   const parsed = notificationSettingsSchema.safeParse({
     expirationReminders: checkbox(formData, "expirationReminders"),
+    expiredItemReminders: checkbox(formData, "expiredItemReminders"),
+    lowStockReminders: checkbox(formData, "lowStockReminders"),
     useTodayAlerts: checkbox(formData, "useTodayAlerts"),
     mealPlanReminders: checkbox(formData, "mealPlanReminders"),
     shoppingReminders: checkbox(formData, "shoppingReminders"),

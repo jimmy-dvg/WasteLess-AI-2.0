@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { getApiErrorMessage } from '@/services/api/client';
+import { syncLocalReminderSources } from '@/features/notifications/deviceNotifications';
 import { useAuth } from '@/store/authStore';
 import {
   createInventoryItem,
@@ -61,6 +62,7 @@ export function useInventory() {
       try {
         const nextData = await listInventoryItems(token, filters);
         setData(nextData);
+        void syncLocalReminderSources({ inventoryItems: nextData.items });
         setError(null);
       } catch (requestError) {
         setError(getApiErrorMessage(requestError, 'Unable to load inventory.'));

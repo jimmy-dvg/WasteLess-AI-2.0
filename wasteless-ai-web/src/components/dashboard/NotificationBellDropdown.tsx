@@ -98,6 +98,8 @@ function NotificationSettingsPanel({ settings }: { settings: NotificationSetting
     <form action={formAction} className="space-y-4 p-4">
       <div className="grid gap-2">
         <CompactToggle name="expirationReminders" label="Expiring soon" defaultChecked={settings.expirationReminders} />
+        <CompactToggle name="expiredItemReminders" label="Expired items" defaultChecked={settings.expiredItemReminders} />
+        <CompactToggle name="lowStockReminders" label="Low stock" defaultChecked={settings.lowStockReminders} />
         <CompactToggle name="useTodayAlerts" label="Use today" defaultChecked={settings.useTodayAlerts} />
         <CompactToggle name="mealPlanReminders" label="Meal plan" defaultChecked={settings.mealPlanReminders} />
         <CompactToggle name="shoppingReminders" label="Shopping" defaultChecked={settings.shoppingReminders} />

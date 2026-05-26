@@ -61,15 +61,22 @@
     {
       "idx": 8,
       "version": "7",
-      "when": 1779530279070,
+      "when": 1790280000000,
       "tag": "0008_handy_sentinels",
       "breakpoints": true
     },
     {
       "idx": 9,
       "version": "7",
-      "when": 1779729198167,
+      "when": 1790366400000,
       "tag": "0009_marvelous_agent_brand",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1790452800000,
+      "tag": "0010_hot_slipstream",
       "breakpoints": true
     }
   ]

@@ -9,6 +9,7 @@ import {
   meal_plan_inventory_usages,
   meal_plan_items,
   meal_plans,
+  notification_push_tokens,
   products,
   profiles,
   recipes,
@@ -29,6 +30,7 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   mealPlans: many(meal_plans),
   recipes: many(recipes),
   savedRecipes: many(saved_recipes),
+  notificationPushTokens: many(notification_push_tokens),
   scanHistory: many(scan_history),
   scannedReceipts: many(scanned_receipts),
   scanImportBatches: many(scan_import_batches),
@@ -96,6 +98,14 @@ export const mealPlanInventoryUsagesRelations = relations(meal_plan_inventory_us
     references: [meal_plan_items.id],
   }),
   product: one(products, { fields: [meal_plan_inventory_usages.product_id], references: [products.id] }),
+}));
+
+export const notificationPushTokensRelations = relations(notification_push_tokens, ({ one }) => ({
+  user: one(users, { fields: [notification_push_tokens.user_id], references: [users.id] }),
+  household: one(households, {
+    fields: [notification_push_tokens.household_id],
+    references: [households.id],
+  }),
 }));
 
 export const savedRecipesRelations = relations(saved_recipes, ({ one }) => ({

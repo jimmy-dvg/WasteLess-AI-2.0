@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { getApiErrorMessage } from '@/services/api/client';
+import { syncLocalReminderSources } from '@/features/notifications/deviceNotifications';
 import { useAuth } from '@/store/authStore';
 import {
   clearCheckedShoppingItems,
@@ -53,6 +54,7 @@ export function useShoppingList() {
       try {
         const nextData = await listShoppingItems(token);
         setData(nextData);
+        void syncLocalReminderSources({ shoppingItems: nextData.items });
         setError(null);
       } catch (requestError) {
         setError(getApiErrorMessage(requestError, 'Unable to load shopping list.'));
