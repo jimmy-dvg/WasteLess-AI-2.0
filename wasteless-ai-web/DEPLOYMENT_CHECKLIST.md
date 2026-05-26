@@ -1,6 +1,6 @@
 # WasteLessAI Production Deployment Checklist
 
-Use this checklist before deploying the Next.js web app to Vercel or another Node-compatible platform.
+Use this checklist before deploying the Next.js web app to Netlify, Vercel, or another Node-compatible platform.
 
 ## Required Environment Variables
 
@@ -80,6 +80,26 @@ After applying migrations, verify that taxonomy data uses the current English UI
 6. Run migrations against the production Neon database after review.
 7. Promote the deployment to production.
 8. Confirm HTTPS is active so secure auth cookies are sent.
+
+## Netlify Deployment Steps
+
+The repository includes a root `netlify.toml` for the web workspace:
+
+```toml
+[build]
+command = "npm --workspace wasteless-ai-web run build"
+publish = "wasteless-ai-web/.next"
+```
+
+In Netlify, keep the base directory as the repository root and deploy the `wasteless-ai-web` workspace. Before building, set the production environment variables in Netlify:
+
+- `DATABASE_URL`
+- `JWT_SECRET`
+- `APP_URL` or `NEXT_PUBLIC_APP_URL`
+- At least one hosted AI provider key, such as `OPENAI_API_KEY`, `GROQ_API_KEY`, `OPENROUTER_API_KEY`, `GEMINI_API_KEY`, `HUGGINGFACE_API_KEY`, or `TOGETHER_API_KEY`
+- `OPENAI_API_KEY` or `GEMINI_API_KEY` for photo recognition
+
+Do not rely on local `.env` files for Netlify builds. Netlify only receives variables configured in the site environment settings.
 
 ## Production Smoke Tests
 
