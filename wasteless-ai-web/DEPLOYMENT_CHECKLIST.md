@@ -64,6 +64,12 @@ Do not run production migrations against the wrong database. Confirm `DATABASE_U
 
 Never reset, drop, or seed production data unless a separate, explicit recovery plan exists.
 
+After applying migrations, verify that taxonomy data uses the current English UI labels:
+
+- Category names should match `Fruit`, `Vegetables`, `Meat & seafood`, `Dairy & eggs`, `Grains & bakery`, `Spices & herbs`, `Drinks`, `Frozen`, and `Canned & jars`.
+- Storage labels should match `Fridge`, `Freezer`, `Pantry`, `Cupboard`, or `Other`.
+- Migration `0011_english_taxonomy_cleanup.sql` is data-only and normalizes older Bulgarian/mojibake labels where present.
+
 ## Vercel Deployment Steps
 
 1. Create or select the Vercel project for `wasteless-ai-web`.
@@ -127,6 +133,7 @@ Database:
 - Migrations run successfully.
 - App connects to the Neon production database.
 - User data is isolated between accounts.
+- Existing category and storage labels display in English.
 
 Deployment:
 

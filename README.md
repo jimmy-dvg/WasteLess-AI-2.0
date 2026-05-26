@@ -1,444 +1,220 @@
 # WasteLessAI
 
-WasteLessAI is an AI-powered platform focused on reducing household food and product waste through smart inventory management, expiration tracking, and intelligent recipe recommendations.
+WasteLessAI is an AI-assisted household inventory platform that helps people reduce food and product waste. It combines inventory tracking, expiration reminders, recipe suggestions, scanning workflows, shopping lists, and household collaboration.
 
-The project consists of:
-- Web application (`Next.js`)
-- Mobile application (`Expo / React Native`)
-- Shared backend infrastructure (`Neon PostgreSQL + Drizzle ORM`)
+The main problem it solves: households often lose track of what they already own, what expires soon, and what can be cooked before it becomes waste. WasteLessAI keeps that information visible and actionable.
 
----
+## Core Features
 
-# Vision
+- Cookie-based user authentication with JWT sessions and bcrypt password hashing
+- Dashboard for inventory, expiry, waste, shopping, recipes, scanning, and household workflows
+- Pantry, fridge, freezer, and household product inventory management
+- Expiration tracking and notification reminders
+- AI receipt, product photo, and barcode-assisted scanning workflows
+- AI recipe recommendations using available and expiring ingredients
+- Shopping list generation and manual shopping list management
+- Household collaboration with roles and invitations
+- Expo mobile client direction for on-the-go inventory, scanning, and notifications
 
-WasteLessAI helps users:
-- Organize pantry and household products
-- Track expiration dates
-- Reduce unnecessary shopping
-- Generate recipes from available ingredients
-- Build sustainable consumption habits
-- Reduce food waste using AI assistance
+## Tech Stack
 
----
+- Web: Next.js App Router, React, Tailwind CSS
+- Mobile: Expo, Expo Router, React Native
+- Database: Neon PostgreSQL
+- ORM: Drizzle ORM and drizzle-kit migrations
+- Auth: Cookie-based JWT sessions, bcrypt password hashing
+- Validation: Zod
+- Testing: Vitest and Playwright
+- AI: Configurable provider gateway plus scanner-specific OpenAI/Gemini support
 
-# Tech Stack
+## Project Structure
 
-## Frontend
-
-### Web
-- Next.js
-- React
-- Tailwind CSS
-
-### Mobile
-- Expo
-- React Native
-
----
-
-## Backend
-
-- Neon DB (PostgreSQL)
-- Drizzle ORM
-- Next.js Route Handlers / Server Actions
-
----
-
-## AI Features
-
-Planned AI capabilities:
-- Recipe generation
-- Ingredient analysis
-- Smart shopping suggestions
-- Expiration prediction
-- Waste analytics
-
----
-
-# Monorepo Structure
-
-```
-wasteless-ai-2.0/
-│
-├── wasteless-ai-web/          # Next.js web application
-│   ├── src/
-│   │   ├── app/               # App Router structure
-│   │   └── public/            # Static assets (at root level for Next.js)
-│   ├── package.json
-│   ├── tsconfig.json
-│   └── next.config.ts
-│
-├── wasteless-ai-mobile/       # Expo/React Native mobile app
-│   ├── src/
-│   │   ├── app/               # Expo Router structure
-│   │   ├── components/
-│   │   ├── assets/            # Images and icons
-│   │   ├── constants/
-│   │   ├── hooks/
-│   │   └── scripts/
-│   ├── package.json
-│   ├── app.json
-│   └── tsconfig.json
-│
-├── wasteless-ai-shared/       # Shared utilities and types
-│   ├── src/
-│   └── package.json
-│
-├── package.json               # Monorepo root
-├── .gitignore
-└── README.md
+```text
+WasteLess-AI-2.0/
+  wasteless-ai-web/       Next.js web app, API routes, DB schema, migrations
+  wasteless-ai-mobile/    Expo mobile client
+  wasteless-ai-shared/    Reserved shared package workspace
+  package.json            npm workspace scripts
 ```
 
-## Projects Overview
+Important web folders:
 
-### Web Application
+```text
+wasteless-ai-web/src/
+  app/                    Next.js App Router pages and route handlers
+  ai/                     AI gateway, providers, prompts, parsers, services
+  ai-parsing/             Receipt and product photo parsing
+  db/                     Drizzle schema, queries, seed scripts
+  features/               Feature modules for auth, inventory, recipes, etc.
+  services/               Shared server services
+  validation/             Zod schemas
+```
 
-**Location:** `wasteless-ai-web/`
+## Environment Variables
 
-**Stack:**
-- Next.js 16
-- React 19
-- Tailwind CSS
-- TypeScript
+Create `wasteless-ai-web/.env` or `wasteless-ai-web/.env.local` from `wasteless-ai-web/.env.example`.
 
-**Responsibilities:**
-- User dashboard
-- Inventory management
-- Analytics and insights
-- AI recipe generation
-- Product organization
-- User authentication
+Required for the web app:
 
-### Mobile Application
+```env
+DATABASE_URL=
+JWT_SECRET=
+```
 
-**Location:** `wasteless-ai-mobile/`
+Common optional values:
 
-**Stack:**
-- Expo
-- React Native
-- TypeScript
+```env
+APP_URL=http://localhost:3000
+API_CORS_ORIGIN=http://localhost:8083
+OPENAI_API_KEY=
+GROQ_API_KEY=
+OPENROUTER_API_KEY=
+GEMINI_API_KEY=
+USDA_FDC_API_KEY=
+BARCODE_LOOKUP_API_KEY=
+NOTIFICATIONS_CRON_SECRET=
+```
 
-**Responsibilities:**
-- Quick product entry
-- On-the-go inventory updates
-- Push notifications
-- Barcode/QR scanning
-- Cross-platform deployment
+Mobile local development usually needs:
 
-### Shared Package
+```env
+EXPO_PUBLIC_API_URL=http://localhost:3001
+```
 
-**Location:** `wasteless-ai-shared/`
+Never commit real secrets. Keep client-safe values under `NEXT_PUBLIC_*` or `EXPO_PUBLIC_*` only when they are intended to be public.
 
-**Contents:**
-- Shared types and interfaces
-- Utility functions
-- Constants
-- API client
+## Local Setup
 
----
-
-# Getting Started
-
-## Requirements
+Requirements:
 
 - Node.js 20+
-- npm or pnpm
-- Git
+- npm
+- A Neon PostgreSQL database or local PostgreSQL-compatible database
 
-## Installation
-
-### Clone Repository
-
-```bash
-git clone <repository-url>
-cd wasteless-ai-2.0
-```
-
-### Install Dependencies
+Install dependencies from the repository root:
 
 ```bash
 npm install
 ```
 
-or
+Run both apps:
 
 ```bash
-pnpm install
+npm run dev
 ```
 
-### Environment Variables
-
-Create `.env.local` files in each project where needed:
-
-**Web** (`wasteless-ai-web/.env.local`):
-```
-DATABASE_URL=postgresql://...
-OPENAI_API_KEY=sk-...
-NEXTAUTH_SECRET=your-secret-key
-```
-
-**Mobile** (`wasteless-ai-mobile/.env.local`):
-```
-EXPO_PUBLIC_API_URL=http://localhost:3001
-```
-
-⚠️ Never commit secrets to git.
-
----
-
-# Development
-
-## Running Applications
-
-### Web Application
+Run only the web app:
 
 ```bash
 npm -w wasteless-ai-web run dev
 ```
 
-Runs on `http://localhost:3000`
-
-### Mobile Application
+Run only the mobile app:
 
 ```bash
 npm -w wasteless-ai-mobile run start
 ```
 
-Options:
-- `--android` - Run on Android emulator
-- `--ios` - Run on iOS simulator
-- `--web` - Run in web browser
+## Database Setup
 
-### Both Concurrently
-
-```bash
-npm run dev
-```
-
-## Building
-
-### Web
+1. Create a Neon project and database.
+2. Copy the pooled connection string into `wasteless-ai-web/.env` as `DATABASE_URL`.
+3. Confirm the target database before running migrations.
+4. Apply migrations from the web workspace:
 
 ```bash
-npm -w wasteless-ai-web run build
-npm -w wasteless-ai-web run start
+npm -w wasteless-ai-web run db:migrate
 ```
 
-### Mobile
+Generate a migration after schema changes:
 
 ```bash
-npm -w wasteless-ai-mobile run build
+npm -w wasteless-ai-web run db:generate
 ```
 
----
+Seed a development database only:
 
-# Features
-
-## MVP Features
-
-- ✅ User authentication
-- ✅ Pantry inventory management
-- ✅ Product management
-- ✅ Expiration date tracking
-- ✅ Shopping list
-- ✅ AI recipe recommendations
-- ✅ Ingredient matching
-
-## Planned Features
-
-- 🔄 OCR receipt scanning
-- 🔄 Barcode scanner
-- 🔄 AI meal planning
-- 🔄 Sustainability analytics
-- 🔄 Shared household inventories
-- 🔄 Push notifications
-- 🔄 Smart waste insights
-
----
-
-# Architecture & Code Standards
-
-See [AGENTS.md](./AGENTS.md) for detailed development guidelines.
-
-### Key Principles
-
-- **Feature-based architecture** - Code organized by features, not layers
-- **TypeScript** - Full type safety
-- **Functional programming** - Pure functions and composition
-- **Modular components** - Reusable, single-responsibility components
-- **Server-first** - Server components by default (Next.js), server actions where appropriate
-
-### Project Structure
-
-Each project follows this pattern:
-
-```
-src/
-├── app/                 # Next.js App Router / Expo Router
-├── components/          # Reusable UI components
-├── hooks/              # Custom React hooks
-├── services/           # External API calls, business logic
-├── utils/              # Helper functions
-├── types/              # TypeScript interfaces
-└── constants/          # App constants
-```
-
----
-
-# Database
-
-Using **Neon PostgreSQL** with **Drizzle ORM**.
-
-### Migrations
-
-Generate:
 ```bash
-npx drizzle-kit generate
+npm -w wasteless-ai-web run db:seed
 ```
 
-Run:
-```bash
-npx drizzle-kit migrate
-```
+Do not seed or reset production data.
 
----
+## Package Scripts
 
-# Contributing
+Root scripts:
 
-1. Create a feature branch: `git checkout -b feature/your-feature`
-2. Make changes following [AGENTS.md](./AGENTS.md) guidelines
-3. Commit with conventional commits: `feat(scope): description`
-4. Push and create a Pull Request
+- `npm run dev` - run web and mobile development servers together
+- `npm run build` - build the web app
+- `npm run lint` - lint web and mobile workspaces
+- `npm test` - run web and mobile tests
+- `npm run test:coverage` - run test coverage
+- `npm run test:e2e` - run web Playwright tests
+- `npm run qa` - lint, test, build, and e2e checks
 
----
+Web scripts:
 
-# License
+- `npm -w wasteless-ai-web run dev`
+- `npm -w wasteless-ai-web run typecheck`
+- `npm -w wasteless-ai-web run lint`
+- `npm -w wasteless-ai-web run test`
+- `npm -w wasteless-ai-web run build`
+- `npm -w wasteless-ai-web run db:migrate`
+- `npm -w wasteless-ai-web run db:studio`
 
-ISC - See LICENSE file
+Mobile scripts:
 
----
+- `npm -w wasteless-ai-mobile run start`
+- `npm -w wasteless-ai-mobile run android`
+- `npm -w wasteless-ai-mobile run ios`
+- `npm -w wasteless-ai-mobile run web`
+- `npm -w wasteless-ai-mobile run lint`
+- `npm -w wasteless-ai-mobile run test`
 
-# Author
+## Authentication Overview
 
-Didi Georgiev
+The web app uses server-side authentication with bcrypt password hashes and signed JWT session cookies. API routes and server actions validate the current user on the server. Sensitive routes should never rely on client-only checks.
 
-npx drizzle-kit migrate
-Running Development Servers
-Web App
-cd apps/web
-npm run dev
-Mobile App
-cd apps/mobile
-npm start
-Development Principles
+Session and auth utilities live under `wasteless-ai-web/src/lib`, `wasteless-ai-web/src/features/auth`, and `wasteless-ai-web/src/actions`.
 
-The project follows:
+## AI Features Overview
 
-Modular architecture
-Feature-based organization
-Functional programming patterns
-Reusable components
-Scalable database design
-Mobile-first UX
-Secure backend practices
-Coding Standards
-Preferred Practices
-Small reusable functions
-Pure business logic
-Async/await
-Clear naming
-Consistent folder structure
-Avoid
-Monolithic files
-Duplicate logic
-Tight coupling
-Unnecessary dependencies
-Business logic inside UI components
-Security
+AI logic is intentionally separated from UI components:
 
-Always:
+- `src/ai/gateway` routes requests across configured providers.
+- `src/ai/providers` contains provider adapters.
+- `src/ai/prompts` keeps prompts centralized.
+- `src/ai-parsing` handles receipt and photo parsing.
+- `src/features/categories/services` handles category and storage suggestions.
 
-Validate inputs
-Sanitize payloads
-Use environment variables
-Protect authenticated routes
+Hosted providers should be used in production. Local providers such as Ollama are useful for development but are not suitable for Vercel production unless separately hosted.
 
-Never:
+## Deployment Notes
 
-Commit secrets
-Expose API keys
-Trust frontend validation alone
-Performance Goals
+The web app is the production deployment target. See `wasteless-ai-web/DEPLOYMENT_CHECKLIST.md` before deploying.
 
-Optimize:
+Minimum production checklist:
 
-Bundle size
-Database queries
-Rendering performance
-Mobile responsiveness
+- Set `DATABASE_URL` and `JWT_SECRET`.
+- Configure at least one hosted AI provider if AI features are enabled.
+- Run `npm -w wasteless-ai-web run typecheck`, `lint`, `test`, and `build`.
+- Review and apply Drizzle migrations to the correct Neon database.
+- Verify auth cookies over HTTPS.
+- Smoke test dashboard, inventory, scanner, recipes, shopping list, and notifications.
 
-Use:
+## Troubleshooting
 
-Lazy loading
-Dynamic imports
-Pagination
-Efficient query patterns
-Testing
+- Missing env variable: compare your local env file with `wasteless-ai-web/.env.example`.
+- Database connection failure: confirm the Neon pooled connection string and SSL settings.
+- Auth loops or missing session: confirm `JWT_SECRET`, HTTPS in production, and cookie settings.
+- Mobile cannot reach API: set `EXPO_PUBLIC_API_URL` to the web dev server URL.
+- AI requests fail: verify provider API keys and `AI_PROVIDER` / `AI_PROVIDER_CHAIN`.
+- Stale build behavior: remove `.next` and run the web dev server again.
 
-Recommended tools:
+## Related Docs
 
-Vitest
-React Testing Library
-Playwright
-React Native Testing Library
-
-Critical flows:
-
-Authentication
-Inventory management
-Recipe generation
-Expiration tracking
-Git Workflow
-Branch Naming
-feature/<name>
-fix/<name>
-refactor/<name>
-
-Examples:
-
-feature/recipe-generator
-fix/mobile-auth
-Commit Convention
-type(scope): short description
-
-Examples:
-
-feat(web): add inventory dashboard
-fix(api): repair auth validation
-UI / UX Goals
-
-The platform should feel:
-
-Fast
-Minimal
-Clean
-Accessible
-Mobile-friendly
-
-Always include:
-
-Loading states
-Error handling
-Empty states
-Responsive layouts
-Long-Term Vision
-
-WasteLessAI aims to evolve into:
-
-An AI-powered household assistant
-A sustainability-focused ecosystem
-A smart food management platform
-A cross-platform productivity tool for reducing waste
-License
-
-Private project — all rights reserved.
+- `PROJECT_OVERVIEW.md`
+- `CONTRIBUTING.md`
+- `DEVELOPMENT_NOTES.md`
+- `QA_REPORT.md`
+- `wasteless-ai-web/DEPLOYMENT_CHECKLIST.md`

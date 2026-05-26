@@ -13,9 +13,9 @@ export default function manifest(): MetadataRoute.Manifest {
     categories: ["food", "productivity", "utilities"],
     icons: [
       {
-        src: "/next.svg",
+        src: "/favicon.ico",
         sizes: "any",
-        type: "image/svg+xml",
+        type: "image/x-icon",
         purpose: "any",
       },
     ],

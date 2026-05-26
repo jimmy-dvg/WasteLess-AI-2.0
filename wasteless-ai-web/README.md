@@ -1,36 +1,50 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# WasteLessAI Web
 
-## Getting Started
+This workspace contains the production-facing Next.js App Router application for WasteLessAI. It owns the web UI, API routes, authentication, Neon PostgreSQL access, Drizzle schema, migrations, seed scripts, and AI-backed scanning/recipe workflows.
 
-First, run the development server:
+## Quick Start
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+cp wasteless-ai-web/.env.example wasteless-ai-web/.env
+npm -w wasteless-ai-web run db:migrate
+npm -w wasteless-ai-web run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Set at least `DATABASE_URL` and `JWT_SECRET` before running database-backed routes.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Main Scripts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `npm run dev` - start Next.js locally
+- `npm run typecheck` - run TypeScript checks
+- `npm run lint` - run ESLint
+- `npm run test` - run Vitest
+- `npm run build` - create a production build
+- `npm run db:generate` - generate Drizzle migrations after schema changes
+- `npm run db:migrate` - apply migrations
+- `npm run db:studio` - open Drizzle Studio
+- `npm run db:seed` - seed development data
 
-## Learn More
+## App Areas
 
-To learn more about Next.js, take a look at the following resources:
+- `src/app` - App Router pages, layouts, loading/error states, and API routes
+- `src/features` - feature-owned UI, actions, services, constants, and validations
+- `src/db` - Drizzle schema, relations, queries, and seed helpers
+- `src/ai` - provider gateway, prompts, parsers, retry/cache utilities
+- `src/ai-parsing` - receipt and image parsing logic
+- `src/scanning` - scanner workflow types, services, and UI panels
+- `src/validation` - Zod schemas shared by routes and actions
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Database
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Drizzle migrations live in `drizzle/`. Do not delete historical migrations. Confirm `DATABASE_URL` before running:
 
-## Deploy on Vercel
+```bash
+npm run db:migrate
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+The current taxonomy cleanup migration normalizes older Bulgarian category/storage labels to the English UI labels.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Deployment
+
+Use `DEPLOYMENT_CHECKLIST.md` before production deployment. Production needs a Neon database, a strong `JWT_SECRET`, and hosted AI provider credentials for AI workflows.

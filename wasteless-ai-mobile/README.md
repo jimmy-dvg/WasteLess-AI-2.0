@@ -1,50 +1,36 @@
-# Welcome to your Expo app 👋
+# WasteLessAI Mobile
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+This workspace contains the Expo mobile client for WasteLessAI. It is designed for quick inventory checks, scanning workflows, shopping list use, household visibility, and notifications while away from the desktop web app.
 
-## Get started
-
-1. Install dependencies
-
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## Quick Start
 
 ```bash
-npm run reset-project
+npm install
+npm -w wasteless-ai-mobile run start
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+For local API access, set:
 
-## Learn more
+```env
+EXPO_PUBLIC_API_URL=http://localhost:3001
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+## Scripts
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+- `npm run start` - start Expo
+- `npm run android` - start on Android
+- `npm run ios` - start on iOS
+- `npm run web` - start Expo web
+- `npm run lint` - run ESLint
+- `npm run test` - run Vitest
+- `npm run test:coverage` - run coverage
 
-## Join the community
+## Structure
 
-Join our community of developers creating universal apps.
+- `src/app` - Expo Router routes
+- `src/features` - feature screens, API clients, hooks, and components
+- `src/services` - shared API and auth services
+- `src/components` - reusable mobile UI components
+- `src/assets/images` - Expo app icons, splash, and favicon assets
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+The starter reset script and unused React logo images have been removed so this workspace reflects the WasteLessAI product rather than the Expo template.

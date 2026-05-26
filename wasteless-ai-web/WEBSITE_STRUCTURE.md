@@ -2,21 +2,23 @@
 
 ## Overview
 
-This is the public-facing website for WasteLessAI, built with Next.js 15, React, and Tailwind CSS. The site is mobile-first, accessible, and optimized for SEO.
+This is the public-facing website for WasteLessAI, built with Next.js 16, React, and Tailwind CSS. The site is mobile-first, accessible, and optimized for SEO.
 
 ## Project Structure
 
 ```
 /src
   /app
-    layout.tsx                 # Root layout with Navbar & Footer
-    page.tsx                   # Landing page (main entry point)
+    layout.tsx                 # Root app layout and metadata
     globals.css                # Global styles & Tailwind configuration
-    /about
+    /(marketing)
+      layout.tsx               # Marketing layout with Navbar & Footer
+      page.tsx                 # Landing page (main entry point)
+    /(marketing)/about
       page.tsx                 # About page
-    /privacy
+    /(marketing)/privacy
       page.tsx                 # Privacy policy page
-    /terms
+    /(marketing)/terms
       page.tsx                 # Terms of service page
   /components
     Navbar.tsx                 # Sticky navigation with mobile menu
@@ -136,7 +138,6 @@ npm start
 
 ```bash
 npm run lint
-npm run format
 ```
 
 ## Component Usage Examples

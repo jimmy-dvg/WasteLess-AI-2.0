@@ -1,6 +1,5 @@
 "use client";
 
-import React from "react";
 import { logoutUser } from "@/actions/auth.actions";
 import { getInitials } from "@/lib/dashboard-utils";
 
