@@ -21,11 +21,25 @@ EXPO_PUBLIC_API_URL=http://localhost:3001
 - `npm run android` - start on Android
 - `npm run ios` - start on iOS
 - `npm run web` - start Expo web
+- `npm run export:web` - export the Expo web build to `dist`
+- `npm run export:web:netlify` - export the Expo web build in Netlify's Linux environment
 - `npm run build:android:apk` - build an installable Android APK with EAS
 - `npm run build:android:aab` - build a Play Store Android App Bundle with EAS
 - `npm run lint` - run ESLint
 - `npm run test` - run Vitest
 - `npm run test:coverage` - run coverage
+
+## Netlify Web Preview
+
+Netlify can host the Expo web export, but it does not create an Android or iOS app. For the mobile workspace Netlify site, use:
+
+```txt
+Base directory: wasteless-ai-mobile
+Build command: npm run export:web:netlify
+Publish directory: dist
+```
+
+Set `EXPO_PUBLIC_API_URL` in Netlify to the deployed WasteLessAI web/API URL.
 
 ## Android APK Build
 
