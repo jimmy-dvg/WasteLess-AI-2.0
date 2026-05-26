@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
+import { apiEnv } from "./src/env/node";
 
-const apiCorsOrigin = process.env.API_CORS_ORIGIN ?? "http://localhost:8083";
+const isProd = process.env.NODE_ENV === "production";
+const apiCorsOrigin = apiEnv().API_CORS_ORIGIN ?? (isProd ? undefined : "http://localhost:8083");
 
 const nextConfig: NextConfig = {
   async headers() {
@@ -8,7 +10,7 @@ const nextConfig: NextConfig = {
       {
         source: "/api/:path*",
         headers: [
-          { key: "Access-Control-Allow-Origin", value: apiCorsOrigin },
+          ...(apiCorsOrigin ? [{ key: "Access-Control-Allow-Origin", value: apiCorsOrigin }] : []),
           { key: "Access-Control-Allow-Credentials", value: "true" },
           { key: "Access-Control-Allow-Methods", value: "GET,POST,PUT,PATCH,DELETE,OPTIONS" },
           { key: "Access-Control-Allow-Headers", value: "Content-Type, Authorization" },

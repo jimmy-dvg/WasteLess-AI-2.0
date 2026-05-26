@@ -1,6 +1,7 @@
 import "server-only";
 
 import crypto from "crypto";
+import { storageEnv } from "@/env/server";
 
 export type StoredImage = {
   url: string | null;
@@ -17,9 +18,10 @@ type CloudinaryConfig = {
 };
 
 function getCloudinaryConfig(): CloudinaryConfig | null {
-  const cloudName = process.env.CLOUDINARY_CLOUD_NAME?.trim();
-  const apiKey = process.env.CLOUDINARY_API_KEY?.trim();
-  const apiSecret = process.env.CLOUDINARY_API_SECRET?.trim();
+  const env = storageEnv();
+  const cloudName = env.CLOUDINARY_CLOUD_NAME;
+  const apiKey = env.CLOUDINARY_API_KEY;
+  const apiSecret = env.CLOUDINARY_API_SECRET;
 
   if (!cloudName || !apiKey || !apiSecret) return null;
 
@@ -27,7 +29,7 @@ function getCloudinaryConfig(): CloudinaryConfig | null {
     cloudName,
     apiKey,
     apiSecret,
-    folder: process.env.CLOUDINARY_RECEIPT_FOLDER?.trim() || "wasteless-ai/receipts",
+    folder: env.CLOUDINARY_RECEIPT_FOLDER || "wasteless-ai/receipts",
   };
 }
 

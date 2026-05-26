@@ -8,6 +8,7 @@ import {
   skipMealPlanItemForHousehold,
 } from "@/features/meal-planning/services/meal-plan.service";
 import { requireApiUser } from "@/lib/auth";
+import { safeRouteErrorMessage } from "@/lib/api-response";
 
 export const dynamic = "force-dynamic";
 
@@ -86,8 +87,9 @@ export async function PATCH(request: Request, context: RouteContext) {
       { status: 200 }
     );
   } catch (error) {
+    console.error("PATCH /api/meal-plan/items/[id] failed", error);
     return NextResponse.json(
-      { success: false, error: error instanceof Error ? error.message : "Unable to update meal plan item" },
+      { success: false, error: safeRouteErrorMessage(error, "Unable to update meal plan item") },
       { status: 500 }
     );
   }

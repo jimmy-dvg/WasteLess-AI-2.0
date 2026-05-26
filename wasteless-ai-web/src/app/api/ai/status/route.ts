@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { aiGateway } from "@/ai/gateway";
 import { assertRateLimit, RateLimitError } from "@/lib/rate-limit";
+import { safeRouteErrorMessage } from "@/lib/api-response";
 import type { AIProviderStatus } from "@/ai/types";
 
 export const dynamic = "force-dynamic";
@@ -45,7 +46,7 @@ export async function GET(request: Request) {
               ...status,
               available: false,
               models: [],
-              error: error instanceof Error ? error.message : "Unable to load models",
+              error: safeRouteErrorMessage(error, "Unable to load models"),
             };
           }
         })
@@ -54,10 +55,11 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ success: true, data: { providers } }, { status: 200 });
   } catch (error) {
+    console.error("GET /api/ai/status failed", error);
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : "Unable to load AI provider status",
+        error: safeRouteErrorMessage(error, "Unable to load AI provider status"),
       },
       { status: 500 }
     );

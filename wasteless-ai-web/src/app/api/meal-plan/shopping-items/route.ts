@@ -3,6 +3,7 @@ import { z } from "zod";
 import { ensurePersonalHouseholdForUser } from "@/db/queries/households";
 import { getMealPlanningPageData } from "@/features/meal-planning/services/meal-plan.service";
 import { requireApiUser } from "@/lib/auth";
+import { safeRouteErrorMessage } from "@/lib/api-response";
 import { addUniqueItemsToShoppingList } from "@/services/shopping-list.service";
 
 export const dynamic = "force-dynamic";
@@ -62,10 +63,11 @@ export async function POST(request: Request) {
       { status: 200 }
     );
   } catch (error) {
+    console.error("POST /api/meal-plan/shopping-items failed", error);
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : "Unable to add optimized shopping items",
+        error: safeRouteErrorMessage(error, "Unable to add optimized shopping items"),
       },
       { status: 500 }
     );

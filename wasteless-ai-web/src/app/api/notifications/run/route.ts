@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { notificationEnv } from "@/env/server";
 import { getCurrentUser } from "@/lib/auth";
 import {
   runNotificationChecksForAllUsers,
@@ -9,7 +10,8 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 function isAuthorizedCronRequest(request: Request) {
-  const secret = process.env.NOTIFICATIONS_CRON_SECRET || process.env.CRON_SECRET;
+  const env = notificationEnv();
+  const secret = env.NOTIFICATIONS_CRON_SECRET || env.CRON_SECRET;
   if (!secret) return false;
 
   const authorization = request.headers.get("authorization") ?? "";

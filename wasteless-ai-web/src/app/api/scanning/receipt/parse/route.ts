@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { parseReceiptText } from "@/ai-parsing/receipt-parser";
+import { safeRouteErrorMessage } from "@/lib/api-response";
 import { requireApiUser } from "@/lib/auth";
 import {
   createScanHistoryEntry,
@@ -51,7 +52,11 @@ export async function POST(request: Request) {
         parsedReceipt,
       },
     });
-  } catch {
-    return NextResponse.json({ success: false, error: "Unable to parse receipt text" }, { status: 500 });
+  } catch (error) {
+    console.error("POST /api/scanning/receipt/parse failed", error);
+    return NextResponse.json(
+      { success: false, error: safeRouteErrorMessage(error, "Unable to parse receipt text") },
+      { status: 500 }
+    );
   }
 }

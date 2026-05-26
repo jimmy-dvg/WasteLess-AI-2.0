@@ -1,6 +1,3 @@
-import dotenv from "dotenv";
-dotenv.config();
-
 import { db, closeDB } from "./db";
 import * as schema from "../schema/tables";
 

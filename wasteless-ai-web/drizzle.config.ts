@@ -1,6 +1,8 @@
 import type { Config } from "drizzle-kit";
-import dotenv from "dotenv";
-dotenv.config();
+
+import { databaseEnv } from "./src/env/node";
+
+const env = databaseEnv();
 
 const config: Config = {
   schema: ["./src/db/schema"],
@@ -8,7 +10,7 @@ const config: Config = {
   
   dialect: "postgresql",
   dbCredentials: {
-    url: process.env.DATABASE_URL!,
+    url: env.DATABASE_URL,
   },
 };
 

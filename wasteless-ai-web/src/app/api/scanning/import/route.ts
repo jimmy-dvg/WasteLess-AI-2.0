@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { ensurePersonalHouseholdForUser } from "@/db/queries/households";
 import { canEditHouseholdInventory } from "@/features/household/constants";
 import { requireApiUser } from "@/lib/auth";
+import { safeRouteErrorMessage } from "@/lib/api-response";
 import {
   createScanHistoryEntry,
   importReceiptItemsToInventory,
@@ -63,7 +64,10 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true, data: result });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unable to import receipt items";
-    return NextResponse.json({ success: false, error: message }, { status: 500 });
+    console.error("POST /api/scanning/import failed", error);
+    return NextResponse.json(
+      { success: false, error: safeRouteErrorMessage(error, "Unable to import receipt items") },
+      { status: 500 }
+    );
   }
 }

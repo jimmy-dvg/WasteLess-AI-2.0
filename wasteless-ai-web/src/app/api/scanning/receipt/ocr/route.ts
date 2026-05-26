@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { parseReceiptText } from "@/ai-parsing/receipt-parser";
 import { validateReceiptImageFile } from "@/image-processing/server";
+import { safeRouteErrorMessage } from "@/lib/api-response";
 import { requireApiUser } from "@/lib/auth";
 import { extractTextFromImage } from "@/ocr/ocr.service";
 import {
@@ -80,7 +81,10 @@ export async function POST(request: Request) {
       },
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Receipt OCR failed";
-    return NextResponse.json({ success: false, error: message }, { status: 400 });
+    console.error("POST /api/scanning/receipt/ocr failed", error);
+    return NextResponse.json(
+      { success: false, error: safeRouteErrorMessage(error, "Receipt OCR failed") },
+      { status: 400 }
+    );
   }
 }

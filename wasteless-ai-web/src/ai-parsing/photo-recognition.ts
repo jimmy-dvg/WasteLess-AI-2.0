@@ -1,6 +1,8 @@
 import "server-only";
 
 import { parsedReceiptSchema } from "@/ai-parsing/schemas";
+import { aiEnv } from "@/env/server";
+import { parseCsvEnv } from "@/env/schema";
 import { CATEGORY_NAMES, STORAGE_ZONE_VALUES } from "@/features/categories/constants";
 import { addDaysToDate, estimateShelfLife, toDateInputValue } from "@/scanning/shelf-life";
 import type { ParsedReceipt, PhotoScanMode } from "@/scanning/types";
@@ -40,25 +42,24 @@ type RecognitionAttempt = {
 };
 
 function getVisionConfig() {
-  const apiKey = process.env.OPENAI_API_KEY?.trim();
+  const env = aiEnv();
+  const apiKey = env.OPENAI_API_KEY;
   if (!apiKey) return null;
 
   return {
     apiKey,
-    baseUrl: (process.env.OPENAI_BASE_URL ?? "https://api.openai.com/v1").replace(/\/$/, ""),
-    model: process.env.OPENAI_VISION_MODEL ?? process.env.OPENAI_MODEL ?? "gpt-4.1-mini",
+    baseUrl: (env.OPENAI_BASE_URL ?? "https://api.openai.com/v1").replace(/\/$/, ""),
+    model: env.OPENAI_VISION_MODEL ?? env.OPENAI_MODEL ?? "gpt-4.1-mini",
   };
 }
 
 function getGeminiVisionConfig() {
-  const apiKey = process.env.GEMINI_API_KEY?.trim();
+  const env = aiEnv();
+  const apiKey = env.GEMINI_API_KEY;
   if (!apiKey) return null;
 
-  const configuredModel = process.env.GEMINI_VISION_MODEL ?? process.env.GEMINI_MODEL ?? "gemini-2.5-flash";
-  const modelChain = (process.env.GEMINI_VISION_MODEL_CHAIN ?? "")
-    .split(",")
-    .map((model) => model.trim())
-    .filter(Boolean);
+  const configuredModel = env.GEMINI_VISION_MODEL ?? env.GEMINI_MODEL ?? "gemini-2.5-flash";
+  const modelChain = parseCsvEnv(env.GEMINI_VISION_MODEL_CHAIN);
 
   return {
     apiKey,
@@ -74,7 +75,7 @@ function getGeminiVisionConfig() {
 }
 
 function getProviderPreference(): "auto" | PhotoRecognitionProvider {
-  const value = process.env.PHOTO_RECOGNITION_PROVIDER?.trim().toLowerCase();
+  const value = aiEnv().PHOTO_RECOGNITION_PROVIDER;
   return value === "openai" || value === "gemini" ? value : "auto";
 }
 

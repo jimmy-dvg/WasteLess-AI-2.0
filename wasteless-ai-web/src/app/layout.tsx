@@ -1,8 +1,20 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import AppProviders from "@/components/providers/AppProviders";
+import { appEnv } from "@/env/server";
+
+function getMetadataBaseUrl() {
+  const env = appEnv();
+  if (env.APP_URL) return env.APP_URL;
+  if (env.NEXT_PUBLIC_APP_URL) return env.NEXT_PUBLIC_APP_URL;
+  if (env.VERCEL_URL) return env.VERCEL_URL.startsWith("http") ? env.VERCEL_URL : `https://${env.VERCEL_URL}`;
+  return "https://wastelessai.com";
+}
+
+const metadataBaseUrl = getMetadataBaseUrl();
 
 export const metadata: Metadata = {
+  metadataBase: new URL(metadataBaseUrl),
   title: "WasteLessAI - AI-Powered Food Waste Reduction",
   description:
     "Smart inventory tracking, expiration monitoring, and AI-powered recipe recommendations to reduce food waste and save money.",
@@ -13,10 +25,10 @@ export const metadata: Metadata = {
     description:
       "Smart inventory tracking and AI-powered recipe recommendations to reduce food waste.",
     type: "website",
-    url: "https://wastelessai.com",
+    url: metadataBaseUrl,
     images: [
       {
-        url: "https://wastelessai.com/og-image.png",
+        url: "/og-image.png",
         width: 1200,
         height: 630,
         alt: "WasteLessAI Platform",

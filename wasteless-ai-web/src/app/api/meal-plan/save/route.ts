@@ -3,6 +3,7 @@ import { z } from "zod";
 import { ensurePersonalHouseholdForUser } from "@/db/queries/households";
 import { saveCurrentMealPlanForUser } from "@/features/meal-planning/services/meal-plan.service";
 import { requireApiUser } from "@/lib/auth";
+import { safeRouteErrorMessage } from "@/lib/api-response";
 
 export const dynamic = "force-dynamic";
 
@@ -40,10 +41,11 @@ export async function POST(request: Request) {
       { status: 201 }
     );
   } catch (error) {
+    console.error("POST /api/meal-plan/save failed", error);
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : "Unable to save meal plan",
+        error: safeRouteErrorMessage(error, "Unable to save meal plan"),
       },
       { status: 500 }
     );

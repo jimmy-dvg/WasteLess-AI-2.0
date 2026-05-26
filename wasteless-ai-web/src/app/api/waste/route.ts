@@ -3,6 +3,7 @@ import { ensurePersonalHouseholdForUser } from "@/db/queries/households";
 import { canEditHouseholdInventory } from "@/features/household/constants";
 import { getWastePageData, logProductWasteForUser } from "@/features/waste/services/waste.service";
 import { requireApiUser } from "@/lib/auth";
+import { safeRouteErrorMessage } from "@/lib/api-response";
 import { wasteLogSchema } from "@/validation/waste";
 
 export const dynamic = "force-dynamic";
@@ -14,7 +15,8 @@ export async function GET() {
   try {
     const data = await getWastePageData(auth.user.id);
     return NextResponse.json({ success: true, data }, { status: 200 });
-  } catch {
+  } catch (error) {
+    console.error("GET /api/waste failed", error);
     return NextResponse.json({ success: false, error: "Waste data is unavailable" }, { status: 500 });
   }
 }
@@ -62,8 +64,9 @@ export async function POST(request: Request) {
       { status: 201 }
     );
   } catch (error) {
+    console.error("POST /api/waste failed", error);
     return NextResponse.json(
-      { success: false, error: error instanceof Error ? error.message : "Unable to log waste right now" },
+      { success: false, error: safeRouteErrorMessage(error, "Unable to log waste right now") },
       { status: 500 }
     );
   }

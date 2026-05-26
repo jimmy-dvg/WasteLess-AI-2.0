@@ -2,13 +2,13 @@ import { NextResponse } from "next/server";
 import { runAssistantChat } from "@/features/assistant/services/assistant.service";
 import { getCurrentUser } from "@/lib/auth";
 import { RateLimitError } from "@/lib/rate-limit";
+import { safeRouteErrorMessage } from "@/lib/api-response";
 import { assistantChatRequestSchema } from "@/validation/assistant";
 
 export const dynamic = "force-dynamic";
 
 function toErrorMessage(error: unknown) {
-  if (error instanceof Error && error.message) return error.message;
-  return "Assistant request failed";
+  return safeRouteErrorMessage(error, "Assistant request failed");
 }
 
 export async function POST(request: Request) {
@@ -48,6 +48,7 @@ export async function POST(request: Request) {
       );
     }
 
+    console.error("POST /api/assistant/chat failed", error);
     return NextResponse.json({ success: false, error: toErrorMessage(error) }, { status: 500 });
   }
 }

@@ -1,6 +1,3 @@
-import dotenv from "dotenv";
-dotenv.config();
-
 import { closeDB } from "./db";
 import { seedUsers } from "./users.seed";
 import { seedHouseholds, seedHouseholdMembers } from "./households.seed";

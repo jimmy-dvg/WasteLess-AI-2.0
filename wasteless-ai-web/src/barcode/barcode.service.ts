@@ -4,6 +4,7 @@ import { and, desc, eq, isNull, or } from "drizzle-orm";
 import { db } from "@/db";
 import { getPrimaryHouseholdForUser } from "@/db/queries/households";
 import * as schema from "@/db/schema/tables";
+import { scannerEnv } from "@/env/server";
 import { getCachedValue, setCachedValue } from "@/lib/cache";
 import { estimateShelfLife } from "@/scanning/shelf-life";
 import type {
@@ -221,7 +222,7 @@ async function lookupOpenFoodFacts(barcode: string) {
 }
 
 async function lookupUSDA(barcode: string) {
-  const apiKey = process.env.USDA_FDC_API_KEY?.trim();
+  const apiKey = scannerEnv().USDA_FDC_API_KEY;
   if (!apiKey || !SUPPORTED_NUMERIC_BARCODE.test(barcode)) return null;
 
   const data = await fetchJson<USDASearchResponse>(
@@ -243,7 +244,7 @@ async function lookupUSDA(barcode: string) {
 }
 
 async function lookupBarcodeLookupApi(barcode: string) {
-  const apiKey = process.env.BARCODE_LOOKUP_API_KEY?.trim();
+  const apiKey = scannerEnv().BARCODE_LOOKUP_API_KEY;
   if (!apiKey || !SUPPORTED_NUMERIC_BARCODE.test(barcode)) return null;
 
   const url = `https://api.barcodelookup.com/v3/products?barcode=${encodeURIComponent(

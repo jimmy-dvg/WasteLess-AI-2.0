@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { lookupBarcodeProduct, normalizeBarcode } from "@/barcode/barcode.service";
+import { safeRouteErrorMessage } from "@/lib/api-response";
 import { requireApiUser } from "@/lib/auth";
 import { createScanHistoryEntry } from "@/scanning/scan-history.service";
 import { barcodeLookupRequestSchema } from "@/scanning/validation";
@@ -39,7 +40,11 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json({ success: true, data: result });
-  } catch {
-    return NextResponse.json({ success: false, error: "Barcode lookup failed" }, { status: 500 });
+  } catch (error) {
+    console.error("POST /api/scanning/barcode failed", error);
+    return NextResponse.json(
+      { success: false, error: safeRouteErrorMessage(error, "Barcode lookup failed") },
+      { status: 500 }
+    );
   }
 }

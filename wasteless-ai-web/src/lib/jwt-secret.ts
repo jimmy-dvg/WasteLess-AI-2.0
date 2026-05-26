@@ -1,15 +1,26 @@
+import { authEnvSchema, parseEnv } from "@/env/schema";
+
 const JWT_SECRET_ERROR_MESSAGE =
   "JWT_SECRET is required for session token signing and verification. Set it in the environment for all runtimes, including tests.";
 
 export class JwtSecretMissingError extends Error {
-  constructor() {
-    super(JWT_SECRET_ERROR_MESSAGE);
+  constructor(message = JWT_SECRET_ERROR_MESSAGE) {
+    super(message);
     this.name = "JwtSecretMissingError";
   }
 }
 
 export function getJwtSecret() {
-  const secret = process.env.JWT_SECRET?.trim();
+  let secret: string | undefined;
+
+  try {
+    secret = parseEnv(authEnvSchema, process.env, { scope: "auth" }).JWT_SECRET;
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new JwtSecretMissingError(error.message);
+    }
+    throw error;
+  }
 
   if (!secret) {
     throw new JwtSecretMissingError();

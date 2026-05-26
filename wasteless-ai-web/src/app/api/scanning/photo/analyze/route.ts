@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { recognizeFoodFromImage } from "@/ai-parsing/photo-recognition";
 import { validateScanImageFile } from "@/image-processing/server";
+import { safeRouteErrorMessage } from "@/lib/api-response";
 import { requireApiUser } from "@/lib/auth";
 import { createScanHistoryEntry } from "@/scanning/scan-history.service";
 import { photoScanModeSchema } from "@/scanning/validation";
@@ -56,7 +57,10 @@ export async function POST(request: Request) {
       },
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unable to analyze food photo";
-    return NextResponse.json({ success: false, error: message }, { status: 400 });
+    console.error("POST /api/scanning/photo/analyze failed", error);
+    return NextResponse.json(
+      { success: false, error: safeRouteErrorMessage(error, "Unable to analyze food photo") },
+      { status: 400 }
+    );
   }
 }
