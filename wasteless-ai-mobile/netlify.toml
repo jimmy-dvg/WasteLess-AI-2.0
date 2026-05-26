@@ -1,0 +1,6 @@
+[build]
+  command = "cd wasteless-ai-mobile && npm run export:web:netlify"
+  publish = "wasteless-ai-mobile/dist"
+
+[build.environment]
+  NODE_VERSION = "22"
