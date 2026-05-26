@@ -21,9 +21,31 @@ EXPO_PUBLIC_API_URL=http://localhost:3001
 - `npm run android` - start on Android
 - `npm run ios` - start on iOS
 - `npm run web` - start Expo web
+- `npm run build:android:apk` - build an installable Android APK with EAS
+- `npm run build:android:aab` - build a Play Store Android App Bundle with EAS
 - `npm run lint` - run ESLint
 - `npm run test` - run Vitest
 - `npm run test:coverage` - run coverage
+
+## Android APK Build
+
+The Android app uses package id `com.wastelessai.mobile`.
+
+To create an installable `.apk`:
+
+```bash
+npm -w wasteless-ai-mobile run build:android:apk
+```
+
+This uses the EAS `preview` profile in `eas.json`, configured with `android.buildType: "apk"`.
+
+If this is the first EAS build for the project, sign in with Expo first:
+
+```bash
+npx --yes eas-cli login
+```
+
+Expo will generate or reuse Android signing credentials during the build.
 
 ## Structure
 

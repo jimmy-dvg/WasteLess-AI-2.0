@@ -7,6 +7,8 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
+    "build:android:apk": "npx --yes eas-cli build --platform android --profile preview",
+    "build:android:aab": "npx --yes eas-cli build --platform android --profile production",
     "lint": "eslint .",
     "test": "vitest run --config vitest.config.ts",
     "test:watch": "vitest --config vitest.config.ts",
