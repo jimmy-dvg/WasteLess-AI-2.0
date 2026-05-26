@@ -10,6 +10,28 @@ export const API_ENDPOINTS = {
     create: '/api/inventory',
     item: (id: string) => `/api/inventory/${encodeURIComponent(id)}`,
   },
+  household: {
+    detail: '/api/household',
+  },
+  categories: {
+    list: '/api/categories',
+    create: '/api/categories',
+    item: (id: string) => `/api/categories/${encodeURIComponent(id)}`,
+    suggest: '/api/categories/suggest',
+  },
+  mealPlan: {
+    detail: '/api/meal-plan',
+    save: '/api/meal-plan/save',
+    shoppingItems: '/api/meal-plan/shopping-items',
+    item: (id: string) => `/api/meal-plan/items/${encodeURIComponent(id)}`,
+  },
+  assistant: {
+    chat: '/api/assistant/chat',
+  },
+  waste: {
+    detail: '/api/waste',
+    create: '/api/waste',
+  },
   scanner: {
     product: '/api/scanning/photo/analyze',
     receipt: '/api/scanning/receipt/ocr',

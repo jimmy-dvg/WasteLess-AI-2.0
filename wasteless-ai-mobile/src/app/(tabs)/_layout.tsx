@@ -84,6 +84,41 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <TabIcon color={color} name="person-outline" />,
         }}
       />
+      <Tabs.Screen
+        name="household"
+        options={{
+          href: null,
+          title: 'Household',
+        }}
+      />
+      <Tabs.Screen
+        name="categories-zones"
+        options={{
+          href: null,
+          title: 'Categories & Zones',
+        }}
+      />
+      <Tabs.Screen
+        name="meal-plan"
+        options={{
+          href: null,
+          title: 'Meal Plan',
+        }}
+      />
+      <Tabs.Screen
+        name="assistant"
+        options={{
+          href: null,
+          title: 'AI Assistant',
+        }}
+      />
+      <Tabs.Screen
+        name="waste"
+        options={{
+          href: null,
+          title: 'Waste',
+        }}
+      />
     </Tabs>
   );
 }

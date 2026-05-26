@@ -8,5 +8,10 @@ export const ROUTES = {
   scan: '/scan',
   recipes: '/recipes',
   shoppingList: '/shopping-list',
+  household: '/household',
+  categoriesZones: '/categories-zones',
+  mealPlan: '/meal-plan',
+  assistant: '/assistant',
+  waste: '/waste',
   profile: '/profile',
 } as const satisfies Record<string, Href>;
