@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { X } from "lucide-react";
 import { DASHBOARD_MODE_THEMES, type DashboardMode } from "@/features/dashboard-mode/constants";
 import DashboardModeSwitcher from "./DashboardModeSwitcher";
 import DashboardSidebar from "./DashboardSidebar";
@@ -29,17 +30,18 @@ export default function MobileSidebar({ open, onClose, dashboardMode }: MobileSi
       >
         <div className="mb-6 flex items-center justify-between">
           <div>
-            <Link href="/" className={`text-sm font-semibold ${theme.linkClass}`}>
+            <Link href="/dashboard" className={`text-sm font-semibold ${theme.linkClass}`} onClick={onClose}>
               WasteLessAI
             </Link>
             <p className="text-xs text-slate-500">Household dashboard</p>
           </div>
           <button
             type="button"
-            className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            aria-label="Close dashboard navigation"
+            className="grid h-10 w-10 place-items-center rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50"
             onClick={onClose}
           >
-            Close
+            <X className="h-5 w-5" aria-hidden="true" />
           </button>
         </div>
         <div className="mb-4 shrink-0">

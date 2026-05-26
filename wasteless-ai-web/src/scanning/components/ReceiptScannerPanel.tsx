@@ -5,7 +5,6 @@ import { Camera, FileText, ImageUp, Loader2, Sparkles, Upload } from "lucide-rea
 import { useToast } from "@/components/ui/Toast";
 import { preprocessReceiptImage } from "@/image-processing/browser";
 import ImportConfirmationModal from "@/scanning/components/ImportConfirmationModal";
-import { createSampleReceiptResult } from "@/scanning/sample-data";
 import type { OCRResult, ParsedReceipt } from "@/scanning/types";
 import type { InventoryCategory } from "@/types/inventory";
 
@@ -42,6 +41,7 @@ export default function ReceiptScannerPanel({ categories, onHistoryChanged }: Re
   const [isProcessingImage, setIsProcessingImage] = useState(false);
   const [isParsing, setIsParsing] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [processingError, setProcessingError] = useState<string | null>(null);
   const { addToast } = useToast();
 
   const processFile = async (file: File | undefined) => {
@@ -49,6 +49,7 @@ export default function ReceiptScannerPanel({ categories, onHistoryChanged }: Re
     setIsProcessingImage(true);
     setParsedReceipt(null);
     setReceiptId(null);
+    setProcessingError(null);
 
     try {
       const processed = await preprocessReceiptImage(file);
@@ -65,7 +66,9 @@ export default function ReceiptScannerPanel({ categories, onHistoryChanged }: Re
       const payload = (await response.json()) as ApiResponse<ReceiptOCRPayload>;
 
       if (!payload.success) {
-        addToast(payload.error || "Receipt OCR failed", "error");
+        const message = payload.error || "Receipt OCR failed";
+        setProcessingError(message);
+        addToast(message, "error");
         if (payload.data?.ocr) {
           setOcrResult(payload.data.ocr);
           setRawText(payload.data.ocr.rawText);
@@ -89,6 +92,7 @@ export default function ReceiptScannerPanel({ categories, onHistoryChanged }: Re
         addToast("No receipt items were detected. Edit OCR text and parse again.", "info");
       }
     } catch {
+      setProcessingError("Unable to process receipt image. Try a clearer photo or upload a smaller file.");
       addToast("Unable to process receipt image", "error");
     } finally {
       setIsProcessingImage(false);
@@ -99,6 +103,7 @@ export default function ReceiptScannerPanel({ categories, onHistoryChanged }: Re
 
   const parseEditedText = async () => {
     setIsParsing(true);
+    setProcessingError(null);
 
     try {
       const response = await fetch("/api/scanning/receipt/parse", {
@@ -109,7 +114,9 @@ export default function ReceiptScannerPanel({ categories, onHistoryChanged }: Re
       const payload = (await response.json()) as ApiResponse<ReceiptParsePayload>;
 
       if (!payload.success) {
-        addToast(payload.error || "Unable to parse receipt text", "error");
+        const message = payload.error || "Unable to parse receipt text";
+        setProcessingError(message);
+        addToast(message, "error");
         return;
       }
 
@@ -124,29 +131,11 @@ export default function ReceiptScannerPanel({ categories, onHistoryChanged }: Re
         addToast("No importable items were found", "info");
       }
     } catch {
+      setProcessingError("Unable to parse receipt text. Review the OCR text and try again.");
       addToast("Unable to parse receipt text", "error");
     } finally {
       setIsParsing(false);
     }
-  };
-
-  const loadSampleReceipt = () => {
-    const sample = createSampleReceiptResult();
-    setPreviewUrl(null);
-    setOcrResult({
-      rawText: sample.rawText,
-      confidence: 0.99,
-      lines: sample.rawText.split("\n").map((text) => ({ text, confidence: 0.99 })),
-      engine: "tesseract.js",
-      processedAt: new Date().toISOString(),
-      warnings: [],
-    });
-    setRawText(sample.rawText);
-    setParsedReceipt(sample);
-    setReceiptId(null);
-    setImageUrl(null);
-    setConfirmOpen(true);
-    addToast("Sample receipt loaded", "info");
   };
 
   return (
@@ -163,7 +152,7 @@ export default function ReceiptScannerPanel({ categories, onHistoryChanged }: Re
           <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-4">
             {previewUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={previewUrl} alt="" className="max-h-[420px] w-full rounded-lg object-contain" />
+              <img src={previewUrl} alt="Selected receipt preview" className="max-h-[420px] w-full rounded-lg object-contain" />
             ) : (
               <div className="grid min-h-64 place-items-center text-center">
                 <div>
@@ -195,15 +184,6 @@ export default function ReceiptScannerPanel({ categories, onHistoryChanged }: Re
               Use camera
             </button>
           </div>
-          <button
-            type="button"
-            onClick={loadSampleReceipt}
-            disabled={isProcessingImage}
-            className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            Load sample receipt
-          </button>
-
           <input
             ref={fileInputRef}
             type="file"
@@ -224,6 +204,12 @@ export default function ReceiptScannerPanel({ categories, onHistoryChanged }: Re
             <div className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
               <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
               Compressing image, running OCR, and parsing receipt...
+            </div>
+          ) : null}
+
+          {processingError ? (
+            <div className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800" role="alert">
+              {processingError}
             </div>
           ) : null}
 
@@ -296,6 +282,11 @@ export default function ReceiptScannerPanel({ categories, onHistoryChanged }: Re
                 </ul>
               ) : null}
               <div className="mt-4 grid gap-2">
+                {parsedReceipt.items.length === 0 ? (
+                  <div className="rounded-lg border border-dashed border-slate-300 bg-white p-4 text-sm text-slate-600">
+                    No products were detected. Edit the OCR text above and parse again.
+                  </div>
+                ) : null}
                 {parsedReceipt.items.slice(0, 8).map((item) => (
                   <div
                     key={`${item.name}-${item.price ?? ""}`}

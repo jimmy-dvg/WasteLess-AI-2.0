@@ -64,6 +64,9 @@ export default function EditProductForm({
           <span className="text-xs font-semibold text-slate-600">Quantity</span>
           <input
             name="quantity"
+            type="number"
+            min="0.01"
+            step="0.01"
             defaultValue={product.quantity}
             required
             className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
@@ -100,7 +103,7 @@ export default function EditProductForm({
             name="storage_location"
             list="edit-storage-options"
             defaultValue={product.storageLocation ?? ""}
-            placeholder="хладилник"
+            placeholder="fridge"
             className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm capitalize outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
           />
         </label>
@@ -132,9 +135,13 @@ export default function EditProductForm({
           className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
         />
       </label>
-      <div className="flex items-center gap-3">
+      <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center">
         <SubmitButton />
-        {state.error ? <p className="text-sm font-medium text-rose-700">{state.error}</p> : null}
+        {state.error ? (
+          <p className="text-sm font-medium text-rose-700" role="alert">
+            {state.error}
+          </p>
+        ) : null}
       </div>
       <datalist id="edit-storage-options">
         {STORAGE_LOCATION_OPTIONS.map((option) => (

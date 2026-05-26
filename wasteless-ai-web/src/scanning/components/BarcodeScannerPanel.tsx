@@ -6,7 +6,6 @@ import { BarcodeFormat, DecodeHintType } from "@zxing/library";
 import { AlertCircle, Camera, PackageCheck, Plus, RotateCcw, ScanLine, Square } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
 import { STORAGE_LOCATION_OPTIONS } from "@/features/categories/constants";
-import { createSampleBarcodeResult } from "@/scanning/sample-data";
 import { addDaysToDate, toDateInputValue } from "@/scanning/shelf-life";
 import type { BarcodeLookupResult, BarcodeProductMetadata } from "@/scanning/types";
 import type { InventoryCategory } from "@/types/inventory";
@@ -259,17 +258,6 @@ export default function BarcodeScannerPanel({ categories, onHistoryChanged }: Ba
               <RotateCcw className="h-4 w-4" aria-hidden="true" />
               Reset
             </button>
-            <button
-              type="button"
-              onClick={() => {
-                setLookupResult(createSampleBarcodeResult());
-                setDetectedFormat("TEST_MODE");
-                addToast("Sample barcode product loaded", "info");
-              }}
-              className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-            >
-              Sample
-            </button>
           </div>
 
           {cameraError ? (
@@ -291,6 +279,7 @@ export default function BarcodeScannerPanel({ categories, onHistoryChanged }: Ba
               <input
                 value={manualBarcode}
                 onChange={(event) => setManualBarcode(event.target.value)}
+                inputMode="numeric"
                 placeholder="012345678905"
                 className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
               />
@@ -306,7 +295,7 @@ export default function BarcodeScannerPanel({ categories, onHistoryChanged }: Ba
           </form>
         </div>
 
-        <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+        <div className="rounded-lg border border-slate-200 bg-slate-50 p-4" aria-live="polite">
           <div className="flex items-start justify-between gap-3">
             <div>
               <h3 className="text-sm font-semibold text-slate-950">Product match</h3>
@@ -321,7 +310,11 @@ export default function BarcodeScannerPanel({ categories, onHistoryChanged }: Ba
 
           {!product ? (
             <div className="mt-4 rounded-lg border border-dashed border-slate-300 bg-white p-5 text-sm text-slate-600">
-              Scan a barcode or enter one manually. Product metadata is cached after a successful lookup.
+              {isLookingUp
+                ? "Looking up product details..."
+                : lookupResult && !lookupResult.found
+                  ? "No product metadata was found. Try another barcode or add the item manually from inventory."
+                  : "Scan a barcode or enter one manually. Product details will appear here before import."}
               {lookupResult?.warnings.length ? (
                 <ul className="mt-3 space-y-1 text-xs text-amber-700">
                   {lookupResult.warnings.map((warning) => (
@@ -338,7 +331,7 @@ export default function BarcodeScannerPanel({ categories, onHistoryChanged }: Ba
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={product.imageUrl}
-                      alt=""
+                      alt={`${product.name} package`}
                       className="h-16 w-16 rounded-lg border border-slate-200 object-cover"
                     />
                   ) : (
@@ -413,7 +406,7 @@ export default function BarcodeScannerPanel({ categories, onHistoryChanged }: Ba
                     <input
                       name="storageLocation"
                       list="barcode-storage-options"
-                      defaultValue={product.storageLocation ?? "килер"}
+                      defaultValue={product.storageLocation ?? "pantry"}
                       className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
                     />
                   </label>

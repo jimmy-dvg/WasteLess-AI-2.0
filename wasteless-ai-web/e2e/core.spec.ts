@@ -13,7 +13,7 @@ test("home page renders the main WasteLessAI workflows", async ({ page }) => {
 test("auth screens expose login and registration forms", async ({ page }) => {
   await page.goto("/login");
 
-  await expect(page.getByRole("heading", { name: "Login" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Welcome back" })).toBeVisible();
   await expect(page.getByLabel("Email")).toBeVisible();
   await expect(page.getByLabel("Password")).toBeVisible();
 
@@ -29,7 +29,7 @@ test("protected dashboard routes redirect anonymous users to login", async ({ pa
   await page.goto("/dashboard");
 
   await expect(page).toHaveURL(/\/login$/);
-  await expect(page.getByRole("heading", { name: "Login" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Welcome back" })).toBeVisible();
 });
 
 test("inventory API requires authentication", async ({ request }) => {

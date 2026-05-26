@@ -1,57 +1,78 @@
+import {
+  Bot,
+  CalendarDays,
+  ChefHat,
+  ClipboardList,
+  Home,
+  Leaf,
+  ScanBarcode,
+  Settings,
+  ShoppingBasket,
+  Tags,
+  Users,
+  type LucideIcon,
+} from "lucide-react";
+
+export type DashboardNavItem = {
+  label: string;
+  href: string;
+  icon: LucideIcon;
+};
+
 export const dashboardNavItems = [
   {
     label: "Dashboard",
     href: "/dashboard",
-    marker: "D",
+    icon: Home,
   },
   {
     label: "Inventory",
     href: "/dashboard/inventory",
-    marker: "I",
+    icon: ClipboardList,
   },
   {
     label: "Household",
     href: "/dashboard/household",
-    marker: "H",
+    icon: Users,
   },
   {
     label: "Scanner",
     href: "/dashboard/scanning",
-    marker: "B",
+    icon: ScanBarcode,
   },
   {
     label: "Categories & Zones",
     href: "/dashboard/categories",
-    marker: "C",
+    icon: Tags,
   },
   {
     label: "Shopping List",
     href: "/dashboard/shopping",
-    marker: "S",
+    icon: ShoppingBasket,
   },
   {
     label: "Meal Plan",
     href: "/dashboard/meal-plan",
-    marker: "M",
+    icon: CalendarDays,
   },
   {
     label: "AI Assistant",
     href: "/dashboard/assistant",
-    marker: "A",
+    icon: Bot,
   },
   {
     label: "Waste",
     href: "/dashboard/waste",
-    marker: "W",
+    icon: Leaf,
   },
   {
     label: "Recipes",
     href: "/dashboard/recipes",
-    marker: "R",
+    icon: ChefHat,
   },
   {
     label: "Settings",
     href: "/dashboard/settings",
-    marker: "T",
+    icon: Settings,
   },
-];
+] satisfies DashboardNavItem[];

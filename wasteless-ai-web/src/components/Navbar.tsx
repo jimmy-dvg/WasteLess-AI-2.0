@@ -55,12 +55,13 @@ export default function Navbar({ user }: { user?: { id: string; name: string; em
                 </Link>
               </>
             ) : (
-              <UserMenu user={user} />
+              <>
+                <Link href="/dashboard" className={`${secondaryButton} hidden sm:inline-flex`}>
+                  Dashboard
+                </Link>
+                <UserMenu user={user} />
+              </>
             )}
-
-            <Link href="/dashboard" className={`${secondaryButton} hidden sm:inline-flex`}>
-              Dashboard
-            </Link>
 
             <button
               type="button"
@@ -99,11 +100,13 @@ export default function Navbar({ user }: { user?: { id: string; name: string; em
                   </Link>
                 </>
               ) : (
-                <UserMenu user={user} />
+                <>
+                  <Link href="/dashboard" className={secondaryButton} onClick={() => setIsOpen(false)}>
+                    Dashboard
+                  </Link>
+                  <UserMenu user={user} />
+                </>
               )}
-              <Link href="/dashboard" className={secondaryButton} onClick={() => setIsOpen(false)}>
-                Dashboard
-              </Link>
             </div>
           </div>
         ) : null}

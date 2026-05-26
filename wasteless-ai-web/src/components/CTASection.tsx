@@ -20,7 +20,12 @@ const actionLinks = [
   },
 ];
 
-export default function CTASection() {
+export default function CTASection({ isAuthenticated = false }: { isAuthenticated?: boolean }) {
+  const primaryHref = isAuthenticated ? "/dashboard/inventory" : "/register";
+  const primaryLabel = isAuthenticated ? "Add inventory" : "Create account";
+  const secondaryHref = isAuthenticated ? "/dashboard" : "/login";
+  const secondaryLabel = isAuthenticated ? "Open dashboard" : "Log in";
+
   return (
     <SectionWrapper className="py-16 sm:py-20 lg:py-24">
       <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-6 sm:p-8 lg:p-10">
@@ -35,17 +40,17 @@ export default function CTASection() {
             </p>
             <div className="mt-6 flex flex-col gap-3 sm:flex-row">
               <Link
-                href="/register"
+                href={primaryHref}
                 className="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-emerald-700"
               >
-                Create account
+                {primaryLabel}
                 <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </Link>
               <Link
-                href="/dashboard"
+                href={secondaryHref}
                 className="inline-flex items-center justify-center rounded-lg border border-emerald-300 bg-white px-5 py-3 text-sm font-bold text-emerald-800 transition hover:bg-emerald-100"
               >
-                Open dashboard
+                {secondaryLabel}
               </Link>
             </div>
           </div>

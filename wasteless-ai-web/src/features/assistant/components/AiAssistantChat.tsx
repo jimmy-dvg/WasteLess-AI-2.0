@@ -28,10 +28,10 @@ type AiAssistantChatProps = {
 };
 
 const QUICK_PROMPTS = [
-  "Какво мога да сготвя днес?",
-  "Кои продукти трябва да използвам първо?",
-  "Добави мляко и яйца в списъка за пазаруване.",
-  "Какво мога да направя с банани, които са презрели?",
+  "What can I cook today?",
+  "Which products should I use first?",
+  "Add milk and eggs to my shopping list.",
+  "What can I make with overripe bananas?",
 ];
 
 function createMessage(role: LocalChatMessage["role"], content: string, extra: Partial<LocalChatMessage> = {}) {

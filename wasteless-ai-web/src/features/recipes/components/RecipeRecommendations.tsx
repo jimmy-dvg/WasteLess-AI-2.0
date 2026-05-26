@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import PageHeader from "@/components/dashboard/PageHeader";
 import EmptyState from "@/components/dashboard/EmptyState";
 import { useToast } from "@/components/ui/Toast";
@@ -393,6 +394,14 @@ export default function RecipeRecommendations({
             <EmptyState
               title="No recipe recommendations yet"
               description="Add inventory items so WasteLessAI can recommend recipes that use what is already in your kitchen."
+              action={
+                <Link
+                  href="/dashboard/inventory#add-inventory-item"
+                  className="inline-flex rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
+                >
+                  Add inventory
+                </Link>
+              }
             />
           ) : null}
 

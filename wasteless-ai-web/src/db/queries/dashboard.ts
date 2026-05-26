@@ -45,7 +45,7 @@ export async function getDashboardOverview(userId: string) {
     db.select({ value: count() }).from(schema.categories).where(activeCategories),
   ]);
 
-  const [recentRows, soonRows] = await Promise.all([
+  const [recentRows, soonRows, shoppingListRows] = await Promise.all([
     db
       .select({
         id: schema.products.id,
@@ -79,13 +79,44 @@ export async function getDashboardOverview(userId: string) {
       )
       .orderBy(asc(schema.products.expiration_date))
       .limit(3),
+    household
+      ? db
+          .select({
+            id: schema.shopping_lists.id,
+            name: schema.shopping_lists.name,
+          })
+          .from(schema.shopping_lists)
+          .where(eq(schema.shopping_lists.household_id, household.id))
+          .orderBy(desc(schema.shopping_lists.updated_at))
+          .limit(1)
+      : Promise.resolve([]),
   ]);
+
+  const shoppingList = shoppingListRows[0] ?? null;
+  const [shoppingItemsRow, openShoppingItemsRow] = shoppingList
+    ? await Promise.all([
+        db
+          .select({ value: count() })
+          .from(schema.shopping_list_items)
+          .where(eq(schema.shopping_list_items.shopping_list_id, shoppingList.id)),
+        db
+          .select({ value: count() })
+          .from(schema.shopping_list_items)
+          .where(
+            and(
+              eq(schema.shopping_list_items.shopping_list_id, shoppingList.id),
+              eq(schema.shopping_list_items.checked, false)
+            )
+          ),
+      ])
+    : [null, null];
 
   const stats = {
     totalProducts: Number(totalProductsRow[0]?.value ?? 0),
     expiringSoon: Number(expiringSoonRow[0]?.value ?? 0),
     expiredItems: Number(expiredItemsRow[0]?.value ?? 0),
     categoriesCount: Number(categoriesRow[0]?.value ?? 0),
+    openShoppingItems: Number(openShoppingItemsRow?.[0]?.value ?? 0),
   };
 
   const recentInventory = recentRows.map((item) => ({
@@ -121,11 +152,24 @@ export async function getDashboardOverview(userId: string) {
         ? "1 category keeps your items organized."
         : `${stats.categoriesCount} categories keep your items organized.`
       : "Create a category to keep your pantry organized.",
+    shoppingList
+      ? `${stats.openShoppingItems} open shopping item${
+          stats.openShoppingItems === 1 ? "" : "s"
+        } are ready for the next trip.`
+      : "Create a shopping list when a recipe or meal plan has gaps.",
   ];
 
   return {
     household,
     stats,
+    shoppingList: shoppingList
+      ? {
+          id: shoppingList.id,
+          name: shoppingList.name,
+          totalItems: Number(shoppingItemsRow?.[0]?.value ?? 0),
+          openItems: stats.openShoppingItems,
+        }
+      : null,
     recentInventory,
     expiringSoonItems,
     insights,

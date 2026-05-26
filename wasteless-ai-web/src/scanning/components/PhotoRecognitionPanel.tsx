@@ -5,7 +5,6 @@ import { Camera, ImageUp, Loader2, Sparkles, Upload } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
 import { preprocessScanImage } from "@/image-processing/browser";
 import ImportConfirmationModal from "@/scanning/components/ImportConfirmationModal";
-import { createSampleFoodPhotoResult } from "@/scanning/sample-data";
 import type { ParsedReceipt, PhotoRecognitionResult } from "@/scanning/types";
 import type { InventoryCategory } from "@/types/inventory";
 
@@ -27,12 +26,14 @@ export default function PhotoRecognitionPanel({ categories, onHistoryChanged }: 
   const [parsedReceipt, setParsedReceipt] = useState<ParsedReceipt | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
   const { addToast } = useToast();
 
   const analyzeFile = async (file: File | undefined) => {
     if (!file) return;
     setIsAnalyzing(true);
     setParsedReceipt(null);
+    setAnalysisError(null);
 
     try {
       const processed = await preprocessScanImage(file);
@@ -50,7 +51,9 @@ export default function PhotoRecognitionPanel({ categories, onHistoryChanged }: 
       const payload = (await response.json()) as ApiResponse<PhotoRecognitionResult>;
 
       if (!payload.success) {
-        addToast(payload.error || "Unable to analyze photo", "error");
+        const message = payload.error || "Unable to analyze photo";
+        setAnalysisError(message);
+        addToast(message, "error");
         return;
       }
 
@@ -66,19 +69,13 @@ export default function PhotoRecognitionPanel({ categories, onHistoryChanged }: 
         addToast("No food items were detected. Try a closer, brighter photo.", "info");
       }
     } catch {
+      setAnalysisError("Unable to analyze photo. Try a clearer, brighter image.");
       addToast("Unable to analyze photo", "error");
     } finally {
       setIsAnalyzing(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
       if (cameraInputRef.current) cameraInputRef.current.value = "";
     }
-  };
-
-  const loadSampleFoodPhoto = () => {
-    setPreviewUrl(null);
-    setParsedReceipt(createSampleFoodPhotoResult());
-    setConfirmOpen(true);
-    addToast("Sample food photo result loaded", "info");
   };
 
   return (
@@ -95,7 +92,7 @@ export default function PhotoRecognitionPanel({ categories, onHistoryChanged }: 
           <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-4">
             {previewUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={previewUrl} alt="" className="max-h-[420px] w-full rounded-lg object-contain" />
+              <img src={previewUrl} alt="Selected food photo preview" className="max-h-[420px] w-full rounded-lg object-contain" />
             ) : (
               <div className="grid min-h-64 place-items-center text-center">
                 <div>
@@ -127,15 +124,6 @@ export default function PhotoRecognitionPanel({ categories, onHistoryChanged }: 
               Use camera
             </button>
           </div>
-          <button
-            type="button"
-            onClick={loadSampleFoodPhoto}
-            disabled={isAnalyzing}
-            className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            Load sample food scan
-          </button>
-
           <input
             ref={fileInputRef}
             type="file"
@@ -156,6 +144,12 @@ export default function PhotoRecognitionPanel({ categories, onHistoryChanged }: 
             <div className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
               <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
               Preparing image and detecting visible products...
+            </div>
+          ) : null}
+
+          {analysisError ? (
+            <div className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800" role="alert">
+              {analysisError}
             </div>
           ) : null}
         </div>
@@ -196,7 +190,7 @@ export default function PhotoRecognitionPanel({ categories, onHistoryChanged }: 
                         </p>
                       </div>
                       <span className="rounded-full bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700">
-                        {item.storageLocation ?? "килер"}
+                        {item.storageLocation ?? "pantry"}
                       </span>
                     </div>
                   </article>

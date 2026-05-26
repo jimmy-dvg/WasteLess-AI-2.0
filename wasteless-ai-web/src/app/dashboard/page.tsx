@@ -19,14 +19,14 @@ import Link from "next/link";
 export const dynamic = "force-dynamic";
 
 type DashboardOverviewData = Awaited<ReturnType<typeof getDashboardOverview>>;
-type StatCardKey = "totalProducts" | "expiringSoon" | "expiredItems" | "categoriesCount";
+type StatCardKey = "totalProducts" | "expiringSoon" | "expiredItems" | "shoppingOpen" | "categoriesCount";
 type QuickActionKey = "addInventory" | "reviewExpiring" | "scanProducts" | "generateRecipes" | "planWeek" | "shopGaps" | "reviewWaste";
 
 const STAT_CARD_ORDER: Record<DashboardMode, StatCardKey[]> = {
-  overview: ["totalProducts", "expiringSoon", "expiredItems", "categoriesCount"],
-  rescue: ["expiringSoon", "expiredItems", "totalProducts", "categoriesCount"],
-  planning: ["totalProducts", "categoriesCount", "expiringSoon", "expiredItems"],
-  insights: ["expiredItems", "expiringSoon", "categoriesCount", "totalProducts"],
+  overview: ["totalProducts", "expiringSoon", "expiredItems", "shoppingOpen", "categoriesCount"],
+  rescue: ["expiringSoon", "expiredItems", "totalProducts", "shoppingOpen", "categoriesCount"],
+  planning: ["shoppingOpen", "totalProducts", "categoriesCount", "expiringSoon", "expiredItems"],
+  insights: ["expiredItems", "expiringSoon", "categoriesCount", "shoppingOpen", "totalProducts"],
 };
 
 const QUICK_ACTION_ORDER: Record<DashboardMode, QuickActionKey[]> = {
@@ -177,6 +177,16 @@ export default async function DashboardPage() {
       value: data.stats.categoriesCount,
       description: "Categories used to organize products",
       marker: "C",
+    },
+    shoppingOpen: {
+      label: "Shopping open",
+      value: data.stats.openShoppingItems,
+      description: data.shoppingList
+        ? `${data.shoppingList.name}: ${data.shoppingList.totalItems} total item${
+            data.shoppingList.totalItems === 1 ? "" : "s"
+          }`
+        : "No active household list yet",
+      marker: "S",
     },
   };
 
@@ -336,7 +346,7 @@ export default async function DashboardPage() {
         }
       />
 
-      <section aria-label="Dashboard overview" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <section aria-label="Dashboard overview" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         {statCards.map((card) => (
           <StatsCard
             key={card.label}

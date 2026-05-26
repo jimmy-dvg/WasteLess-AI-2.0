@@ -11,6 +11,14 @@
     @apply bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-50 transition-colors;
   }
 
+  ::selection {
+    @apply bg-emerald-200 text-emerald-950;
+  }
+
+  :focus-visible {
+    @apply outline-none ring-2 ring-emerald-500 ring-offset-2 ring-offset-white;
+  }
+
   h1,
   h2,
   h3,

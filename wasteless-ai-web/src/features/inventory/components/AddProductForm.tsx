@@ -20,7 +20,7 @@ function SubmitButton() {
     <button
       type="submit"
       disabled={pending}
-      className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-emerald-300"
+      className="inline-flex w-full justify-center rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-emerald-300 sm:w-auto"
     >
       {pending ? "Adding..." : "Add product"}
     </button>
@@ -31,7 +31,7 @@ const locationOptions = STORAGE_LOCATION_OPTIONS;
 
 export default function AddProductForm({
   categories,
-  defaultStorageLocation = "килер",
+  defaultStorageLocation = "pantry",
 }: {
   categories: InventoryCategory[];
   defaultStorageLocation?: string;
@@ -71,6 +71,9 @@ export default function AddProductForm({
           <span className="text-xs font-semibold text-slate-600">Quantity</span>
           <input
             name="quantity"
+            type="number"
+            min="0.01"
+            step="0.01"
             required
             placeholder="2"
             className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
@@ -104,7 +107,7 @@ export default function AddProductForm({
             name="storage_location"
             list="storage-options"
             defaultValue={defaultStorageLocation}
-            placeholder="хладилник"
+            placeholder="fridge"
             className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm capitalize outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
           />
         </label>
@@ -132,9 +135,13 @@ export default function AddProductForm({
             className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
           />
         </label>
-        <div className="flex items-end gap-3 md:col-span-2">
+        <div className="flex flex-col items-start gap-3 md:col-span-2 md:flex-row md:items-end">
           <SubmitButton />
-          {state.error ? <p className="text-sm font-medium text-rose-700">{state.error}</p> : null}
+          {state.error ? (
+            <p className="text-sm font-medium text-rose-700" role="alert">
+              {state.error}
+            </p>
+          ) : null}
         </div>
       </form>
       <datalist id="storage-options">

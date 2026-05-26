@@ -9,9 +9,10 @@ type InventoryFiltersProps = {
   categories: InventoryCategory[];
   locations: string[];
   filters: InventoryFilters;
+  resultCount?: number;
 };
 
-export default function InventoryFilters({ categories, locations, filters }: InventoryFiltersProps) {
+export default function InventoryFilters({ categories, locations, filters, resultCount }: InventoryFiltersProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -45,6 +46,17 @@ export default function InventoryFilters({ categories, locations, filters }: Inv
 
   return (
     <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h2 className="text-base font-semibold text-slate-950">Find products</h2>
+          <p className="text-sm text-slate-500">Filter by status, category, storage location, or product name.</p>
+        </div>
+        {typeof resultCount === "number" ? (
+          <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+            {resultCount} result{resultCount === 1 ? "" : "s"}
+          </span>
+        ) : null}
+      </div>
       <div className="grid gap-3 md:grid-cols-[minmax(0,1.5fr)_180px_180px_180px_180px]">
         <label>
           <span className="text-xs font-semibold text-slate-600">Search</span>

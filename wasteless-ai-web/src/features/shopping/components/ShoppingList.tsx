@@ -15,6 +15,7 @@ type ShoppingListItem = {
   name: string;
   quantity: string;
   checked: boolean;
+  source?: string;
 };
 
 type ShoppingListProps = {
@@ -57,6 +58,55 @@ export default function ShoppingList({ list, items, shoppingCadenceLabel = "Week
   }, [state.success]);
 
   const completedCount = items.filter((item) => item.checked).length;
+  const openItems = items.filter((item) => !item.checked);
+  const completedItems = items.filter((item) => item.checked);
+
+  const renderSourceLabel = (source?: string) => {
+    if (!source || source === "manual") return "Manual";
+    if (source === "recipe" || source === "meal_plan") return "Generated";
+    return source.replace(/_/g, " ");
+  };
+
+  const renderItem = (item: ShoppingListItem) => (
+    <li key={item.id} className="flex items-center gap-3 p-4 transition hover:bg-slate-50">
+      <form action={updateShoppingItemStatus} className="flex items-center">
+        <input type="hidden" name="itemId" value={item.id} />
+        <input
+          type="checkbox"
+          name="checked"
+          defaultChecked={item.checked}
+          aria-label={`Mark ${item.name} ${item.checked ? "not complete" : "complete"}`}
+          onChange={(event) => event.currentTarget.form?.requestSubmit()}
+          className="h-5 w-5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+        />
+      </form>
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <p
+            className={`truncate text-sm font-semibold ${
+              item.checked ? "text-slate-400 line-through" : "text-slate-950"
+            }`}
+          >
+            {item.name}
+          </p>
+          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold capitalize text-slate-600">
+            {renderSourceLabel(item.source)}
+          </span>
+        </div>
+        <p className="text-xs text-slate-500">{item.quantity || "1 item"}</p>
+      </div>
+      <form action={removeShoppingItem}>
+        <input type="hidden" name="itemId" value={item.id} />
+        <button
+          type="submit"
+          aria-label={`Remove ${item.name}`}
+          className="rounded-lg border border-rose-200 px-3 py-2 text-sm font-medium text-rose-600 hover:bg-rose-50"
+        >
+          Remove
+        </button>
+      </form>
+    </li>
+  );
 
   return (
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
@@ -83,42 +133,23 @@ export default function ShoppingList({ list, items, shoppingCadenceLabel = "Week
             />
           </div>
         ) : (
-          <ul className="divide-y divide-slate-100">
-            {items.map((item) => (
-              <li key={item.id} className="flex items-center gap-3 p-4 transition hover:bg-slate-50">
-                <form action={updateShoppingItemStatus} className="flex items-center">
-                  <input type="hidden" name="itemId" value={item.id} />
-                  <input
-                    type="checkbox"
-                    name="checked"
-                    defaultChecked={item.checked}
-                    aria-label={`Mark ${item.name} complete`}
-                    onChange={(event) => event.currentTarget.form?.requestSubmit()}
-                    className="h-5 w-5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
-                  />
-                </form>
-                <div className="min-w-0 flex-1">
-                  <p
-                    className={`truncate text-sm font-semibold ${
-                      item.checked ? "text-slate-400 line-through" : "text-slate-950"
-                    }`}
-                  >
-                    {item.name}
-                  </p>
-                  <p className="text-xs text-slate-500">{item.quantity}</p>
+          <div>
+            {openItems.length > 0 ? (
+              <ul className="divide-y divide-slate-100">{openItems.map(renderItem)}</ul>
+            ) : (
+              <div className="border-b border-slate-100 p-5 text-sm text-emerald-700">
+                Everything is checked off for this trip.
+              </div>
+            )}
+            {completedItems.length > 0 ? (
+              <div className="border-t border-slate-100">
+                <div className="bg-slate-50 px-4 py-2 text-xs font-semibold uppercase tracking-normal text-slate-500">
+                  Completed
                 </div>
-                <form action={removeShoppingItem}>
-                  <input type="hidden" name="itemId" value={item.id} />
-                  <button
-                    type="submit"
-                    className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100"
-                  >
-                    Remove
-                  </button>
-                </form>
-              </li>
-            ))}
-          </ul>
+                <ul className="divide-y divide-slate-100">{completedItems.map(renderItem)}</ul>
+              </div>
+            ) : null}
+          </div>
         )}
       </section>
 
@@ -155,7 +186,7 @@ export default function ShoppingList({ list, items, shoppingCadenceLabel = "Week
           </div>
           <AddButton />
           {state.error ? <p className="text-sm font-medium text-rose-700">{state.error}</p> : null}
-          {state.message ? <p className="text-sm font-medium text-emerald-700">{state.message}</p> : null}
+          {state.message ? <p className="text-sm font-medium text-emerald-700" aria-live="polite">{state.message}</p> : null}
         </form>
       </aside>
     </div>

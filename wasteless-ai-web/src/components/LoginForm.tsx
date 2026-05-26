@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useActionState } from "react";
+import Link from "next/link";
+import { AlertCircle, LogIn } from "lucide-react";
 import { loginUser, type AuthActionState } from "@/actions/auth.actions";
 
 export default function LoginForm() {
@@ -11,13 +13,14 @@ export default function LoginForm() {
   return (
     <form
       action={formAction}
-      className="space-y-4 max-w-md mx-auto"
+      className="space-y-4 rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
       suppressHydrationWarning
     >
       {state.error ? (
-        <p className="text-sm text-red-600" role="alert">
-          {state.error}
-        </p>
+        <div className="flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700" role="alert">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+          <p>{state.error}</p>
+        </div>
       ) : null}
       <div>
         <label htmlFor="login-email" className="block text-sm font-medium text-slate-700">
@@ -29,7 +32,8 @@ export default function LoginForm() {
           type="email"
           autoComplete="email"
           required
-          className="mt-1 block w-full rounded-md border p-2"
+          placeholder="you@example.com"
+          className="mt-1 block w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
         />
       </div>
       <div>
@@ -42,18 +46,26 @@ export default function LoginForm() {
           type="password"
           autoComplete="current-password"
           required
-          className="mt-1 block w-full rounded-md border p-2"
+          placeholder="Enter your password"
+          className="mt-1 block w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
         />
       </div>
       <div>
         <button
           type="submit"
-          className="px-4 py-2 rounded bg-emerald-600 text-white disabled:opacity-60"
+          className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-emerald-300"
           disabled={isPending}
         >
-          {isPending ? "Signing in..." : "Sign In"}
+          <LogIn className="h-4 w-4" aria-hidden="true" />
+          {isPending ? "Signing in..." : "Sign in"}
         </button>
       </div>
+      <p className="text-center text-sm text-slate-600">
+        New to WasteLessAI?{" "}
+        <Link href="/register" className="font-semibold text-emerald-700 hover:text-emerald-800">
+          Create an account
+        </Link>
+      </p>
     </form>
   );
 }

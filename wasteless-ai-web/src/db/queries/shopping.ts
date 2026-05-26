@@ -46,6 +46,7 @@ export async function getShoppingPageData(userId: string) {
       quantity: schema.shopping_list_items.quantity,
       unit: schema.shopping_list_items.unit,
       checked: schema.shopping_list_items.checked,
+      source: schema.shopping_list_items.source,
       createdAt: schema.shopping_list_items.created_at,
     })
     .from(schema.shopping_list_items)
@@ -60,6 +61,7 @@ export async function getShoppingPageData(userId: string) {
       name: item.name,
       quantity: formatQuantity(item.quantity, item.unit),
       checked: Boolean(item.checked),
+      source: item.source ?? "manual",
     })),
   };
 }

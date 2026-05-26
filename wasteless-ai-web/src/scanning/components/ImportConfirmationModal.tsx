@@ -149,6 +149,7 @@ function ImportConfirmationModalBody({
                       <td className="px-3 py-3">
                         <input
                           type="checkbox"
+                          aria-label={`Include ${item.normalizedName || item.name} in import`}
                           checked={item.selected !== false}
                           onChange={(event) => updateItem(index, { selected: event.target.checked })}
                           className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
@@ -156,6 +157,7 @@ function ImportConfirmationModalBody({
                       </td>
                       <td className="px-3 py-3">
                         <input
+                          aria-label={`Product name for ${item.normalizedName || item.name}`}
                           value={item.normalizedName || item.name}
                           onChange={(event) =>
                             updateItem(index, {
@@ -169,6 +171,7 @@ function ImportConfirmationModalBody({
                       <td className="px-3 py-3">
                         <input
                           type="number"
+                          aria-label={`Quantity for ${item.normalizedName || item.name}`}
                           min="0.01"
                           step="0.01"
                           value={item.quantity}
@@ -178,6 +181,7 @@ function ImportConfirmationModalBody({
                       </td>
                       <td className="px-3 py-3">
                         <input
+                          aria-label={`Unit for ${item.normalizedName || item.name}`}
                           value={item.unit ?? ""}
                           onChange={(event) => updateItem(index, { unit: event.target.value || null })}
                           className="w-20 rounded-lg border border-slate-200 px-2 py-1.5 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
@@ -185,6 +189,7 @@ function ImportConfirmationModalBody({
                       </td>
                       <td className="px-3 py-3">
                         <select
+                          aria-label={`Category for ${item.normalizedName || item.name}`}
                           value={item.categoryId ?? ""}
                           onChange={(event) => updateItem(index, { categoryId: event.target.value || null })}
                           className="w-40 rounded-lg border border-slate-200 bg-white px-2 py-1.5 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
@@ -199,6 +204,7 @@ function ImportConfirmationModalBody({
                       </td>
                       <td className="px-3 py-3">
                         <input
+                          aria-label={`Storage location for ${item.normalizedName || item.name}`}
                           value={item.storageLocation ?? ""}
                           onChange={(event) => updateItem(index, { storageLocation: event.target.value || null })}
                           className="w-28 rounded-lg border border-slate-200 px-2 py-1.5 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
@@ -207,6 +213,7 @@ function ImportConfirmationModalBody({
                       <td className="px-3 py-3">
                         <input
                           type="date"
+                          aria-label={`Expiration date for ${item.normalizedName || item.name}`}
                           value={item.expirationDate ?? ""}
                           onChange={(event) => updateItem(index, { expirationDate: event.target.value || null })}
                           className="w-36 rounded-lg border border-slate-200 px-2 py-1.5 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
@@ -215,6 +222,7 @@ function ImportConfirmationModalBody({
                       <td className="px-3 py-3">
                         <input
                           type="number"
+                          aria-label={`Price for ${item.normalizedName || item.name}`}
                           min="0"
                           step="0.01"
                           value={item.price ?? ""}

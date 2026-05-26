@@ -25,6 +25,7 @@ export default function DashboardSidebar({
     <nav aria-label="Dashboard navigation" className="min-h-0 flex-1 overflow-y-auto pr-1">
       <div className="flex flex-col gap-2">
         {dashboardNavItems.map((item) => {
+          const Icon = item.icon;
           const isActive =
             item.href === "/"
               ? pathname === "/"
@@ -48,7 +49,7 @@ export default function DashboardSidebar({
                   isActive ? theme.sidebarActiveMarkerClass : theme.sidebarInactiveMarkerClass
                 }`}
               >
-                {item.marker}
+                <Icon className="h-4 w-4" />
               </span>
               <span>{item.label}</span>
             </Link>

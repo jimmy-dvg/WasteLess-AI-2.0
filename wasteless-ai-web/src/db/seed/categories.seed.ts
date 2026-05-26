@@ -14,14 +14,14 @@ function getSeedCategoryId(name: string) {
 }
 
 function categorizeSeedProduct(productName: string) {
-  if (productDefinitions.dairy.some((product) => product.name === productName)) return getSeedCategoryId("млечни");
-  if (productDefinitions.meat.some((product) => product.name === productName)) return getSeedCategoryId("месо");
-  if (productDefinitions.frozen.some((product) => product.name === productName)) return getSeedCategoryId("замразени");
-  if (productDefinitions.beverages.some((product) => product.name === productName)) return getSeedCategoryId("напитки");
-  if (/canned/i.test(productName)) return getSeedCategoryId("консерви");
-  if (/rice|pasta|flour|oats|cereal|bread/i.test(productName)) return getSeedCategoryId("зърнени");
-  if (/banana|apple|strawberries|orange/i.test(productName)) return getSeedCategoryId("плодове");
-  return getSeedCategoryId("зеленчуци");
+  if (productDefinitions.dairy.some((product) => product.name === productName)) return getSeedCategoryId("Dairy & eggs");
+  if (productDefinitions.meat.some((product) => product.name === productName)) return getSeedCategoryId("Meat & seafood");
+  if (productDefinitions.frozen.some((product) => product.name === productName)) return getSeedCategoryId("Frozen");
+  if (productDefinitions.beverages.some((product) => product.name === productName)) return getSeedCategoryId("Drinks");
+  if (/canned/i.test(productName)) return getSeedCategoryId("Canned & jars");
+  if (/rice|pasta|flour|oats|cereal|bread/i.test(productName)) return getSeedCategoryId("Grains & bakery");
+  if (/banana|apple|strawberries|orange/i.test(productName)) return getSeedCategoryId("Fruit");
+  return getSeedCategoryId("Vegetables");
 }
 
 export async function seedCategories() {
@@ -49,7 +49,7 @@ export async function seedProducts() {
 
   const productsData = getAllProducts().map((product) => {
     const categoryId = categorizeSeedProduct(product.name);
-    const categoryName = SEED_CATEGORIES.find((category) => category.id === categoryId)?.name ?? "зеленчуци";
+    const categoryName = SEED_CATEGORIES.find((category) => category.id === categoryId)?.name ?? "Vegetables";
 
     return {
       id: deterministicId(`product:${product.name}`),

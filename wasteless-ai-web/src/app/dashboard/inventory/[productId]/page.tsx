@@ -22,10 +22,10 @@ export default async function ProductDetailsPage({ params }: { params: Promise<{
         title={product.name}
         description="Review quantity, expiration, and notes for this item."
         action={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             <Link
               href={`/dashboard/inventory/${product.id}/edit`}
-              className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+              className="inline-flex justify-center rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
             >
               Edit
             </Link>
@@ -49,8 +49,13 @@ export default async function ProductDetailsPage({ params }: { params: Promise<{
           </div>
           <div>
             <p className="text-sm text-slate-500">Status</p>
-            <div className="mt-2">
+            <div className="mt-2 flex flex-wrap gap-2">
               <StatusBadge status={product.status} />
+              {product.lowStock ? (
+                <span className="inline-flex items-center rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 ring-1 ring-amber-100">
+                  Low stock
+                </span>
+              ) : null}
             </div>
           </div>
           <div>
@@ -85,7 +90,10 @@ export default async function ProductDetailsPage({ params }: { params: Promise<{
         </div>
       </section>
 
-      <Link href="/dashboard/inventory" className="text-sm font-semibold text-emerald-700 hover:text-emerald-800">
+      <Link
+        href="/dashboard/inventory"
+        className="inline-flex w-fit rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-100 hover:text-emerald-800"
+      >
         Back to inventory
       </Link>
     </div>

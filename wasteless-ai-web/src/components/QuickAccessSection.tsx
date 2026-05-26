@@ -79,7 +79,7 @@ const quickActions: QuickAction[] = [
   },
 ];
 
-export default function QuickAccessSection() {
+export default function QuickAccessSection({ isAuthenticated = false }: { isAuthenticated?: boolean }) {
   return (
     <SectionWrapper id="quick-access" className="py-12 sm:py-16 lg:py-20">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -91,10 +91,10 @@ export default function QuickAccessSection() {
           </p>
         </div>
         <Link
-          href="/register"
+          href={isAuthenticated ? "/dashboard" : "/register"}
           className="inline-flex items-center justify-center rounded-lg bg-emerald-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-emerald-700"
         >
-          Create free account
+          {isAuthenticated ? "Open dashboard" : "Create free account"}
         </Link>
       </div>
 

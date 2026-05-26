@@ -13,7 +13,7 @@ import type { z } from "zod";
 export type HouseholdPreferences = z.infer<typeof householdPreferencesSchema>;
 
 export const DEFAULT_HOUSEHOLD_PREFERENCES: HouseholdPreferences = {
-  defaultStorageLocation: "килер",
+  defaultStorageLocation: "Pantry",
   shoppingCadence: "weekly",
 };
 

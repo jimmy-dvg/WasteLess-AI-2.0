@@ -76,7 +76,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         className={`fixed inset-y-0 left-0 hidden w-72 overflow-hidden border-r p-5 lg:flex lg:flex-col ${theme.sidebarClass}`}
       >
         <div className="mb-5 shrink-0">
-          <Link href="/" className="text-lg font-bold text-slate-950">
+          <Link href="/dashboard" className="text-lg font-bold text-slate-950">
             WasteLessAI
           </Link>
           <p className="mt-1 text-sm text-slate-500">Smart household waste control</p>

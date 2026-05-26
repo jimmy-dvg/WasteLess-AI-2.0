@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
+import { Menu, Search } from "lucide-react";
 import MobileSidebar from "./MobileSidebar";
 import NotificationBellDropdown, {
   type NotificationDropdownData,
@@ -44,24 +46,27 @@ export default function DashboardHeader({
             className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 lg:hidden"
             onClick={() => setMobileNavOpen(true)}
           >
-            <span className="flex flex-col gap-1" aria-hidden="true">
-              <span className="h-0.5 w-4 rounded bg-current" />
-              <span className="h-0.5 w-4 rounded bg-current" />
-              <span className="h-0.5 w-4 rounded bg-current" />
-            </span>
+            <Menu className="h-5 w-5" aria-hidden="true" />
           </button>
+
+          <Link href="/dashboard" className="text-base font-bold text-slate-950 lg:hidden">
+            WasteLessAI
+          </Link>
 
           <form action="/dashboard/inventory" className="hidden flex-1 sm:block">
             <label className="sr-only" htmlFor="dashboard-search">
               Search inventory
             </label>
-            <input
-              id="dashboard-search"
-              name="query"
-              type="search"
-              placeholder="Search pantry, fridge, freezer..."
-              className={`w-full max-w-xl rounded-lg px-4 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:ring-2 ${theme.searchInputClass}`}
-            />
+            <div className="relative max-w-xl">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden="true" />
+              <input
+                id="dashboard-search"
+                name="query"
+                type="search"
+                placeholder="Search pantry, fridge, freezer..."
+                className={`w-full rounded-lg py-2 pl-10 pr-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:ring-2 ${theme.searchInputClass}`}
+              />
+            </div>
           </form>
 
           <div className="ml-auto flex items-center gap-2">

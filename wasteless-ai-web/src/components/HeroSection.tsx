@@ -29,7 +29,12 @@ const workflowLinks = [
   { label: "Plan week", href: "/dashboard/meal-plan" },
 ];
 
-export default function HeroSection() {
+export default function HeroSection({ isAuthenticated = false }: { isAuthenticated?: boolean }) {
+  const primaryHref = isAuthenticated ? "/dashboard" : "/register";
+  const primaryLabel = isAuthenticated ? "Open dashboard" : "Start free";
+  const secondaryHref = isAuthenticated ? "/dashboard/inventory" : "/login";
+  const secondaryLabel = isAuthenticated ? "Manage inventory" : "Log in";
+
   return (
     <SectionWrapper className="pt-16 sm:pt-24 lg:pt-28">
       <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(420px,0.9fr)] lg:items-center">
@@ -48,17 +53,17 @@ export default function HeroSection() {
 
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <Link
-              href="/register"
+              href={primaryHref}
               className="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-emerald-700"
             >
-              Start free
+              {primaryLabel}
               <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </Link>
             <Link
-              href="/dashboard"
+              href={secondaryHref}
               className="inline-flex items-center justify-center rounded-lg border border-slate-200 px-5 py-3 text-sm font-bold text-slate-800 transition hover:bg-slate-50"
             >
-              Open dashboard
+              {secondaryLabel}
             </Link>
             <Link
               href="/dashboard/scanning"

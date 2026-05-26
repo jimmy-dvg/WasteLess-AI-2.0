@@ -73,7 +73,7 @@ export default function StorageSuggestionTool() {
         <div>
           <h2 className="text-base font-semibold text-slate-950">AI product organizer</h2>
           <p className="mt-1 text-sm leading-6 text-slate-600">
-            Продуктите могат да се подреждат автоматично с помоща на AI.
+            Suggest a practical category and storage zone before products are saved.
           </p>
         </div>
       </div>
@@ -84,7 +84,7 @@ export default function StorageSuggestionTool() {
           <input
             value={productName}
             onChange={(event) => setProductName(event.target.value)}
-            placeholder="Кисело мляко"
+            placeholder="Greek yogurt"
             className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
           />
         </label>

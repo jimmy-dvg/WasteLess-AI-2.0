@@ -4,16 +4,19 @@ import FeaturesSection from "@/components/FeaturesSection";
 import HowItWorksSection from "@/components/HowItWorksSection";
 import BenefitsSection from "@/components/BenefitsSection";
 import CTASection from "@/components/CTASection";
+import { getCurrentUser } from "@/lib/auth";
 
-export default function Home() {
+export default async function Home() {
+  const user = await getCurrentUser();
+
   return (
     <>
-      <HeroSection />
-      <QuickAccessSection />
+      <HeroSection isAuthenticated={Boolean(user)} />
+      <QuickAccessSection isAuthenticated={Boolean(user)} />
       <FeaturesSection />
       <HowItWorksSection />
       <BenefitsSection />
-      <CTASection />
+      <CTASection isAuthenticated={Boolean(user)} />
     </>
   );
 }

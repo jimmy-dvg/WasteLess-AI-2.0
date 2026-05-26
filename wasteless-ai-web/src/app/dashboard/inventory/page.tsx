@@ -68,7 +68,12 @@ export default async function InventoryPage({ searchParams }: InventoryPageProps
         <AddProductForm categories={data.categories} defaultStorageLocation={preferences.defaultStorageLocation} />
       </div>
 
-      <InventoryFilters categories={data.categories} locations={data.locations} filters={parsedFilters.data} />
+      <InventoryFilters
+        categories={data.categories}
+        locations={data.locations}
+        filters={parsedFilters.data}
+        resultCount={data.totalCount}
+      />
 
       <InventoryTable items={data.items} />
 
