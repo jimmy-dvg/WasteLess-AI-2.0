@@ -62,6 +62,8 @@ npm run deploy:vercel
 
 The Android app uses package id `com.wastelessai.mobile`.
 
+An installable Android `.apk` build is now available in the GitHub release assets for direct device testing.
+
 APK and app bundle builds embed the public API origin from `eas.json`:
 
 ```env
