@@ -52,6 +52,23 @@ describe("mobile API client", () => {
     expect(headers.get("X-Test")).toBe("yes");
   });
 
+  it("normalizes API base URLs with a trailing api segment", async () => {
+    process.env.EXPO_PUBLIC_API_URL = "https://api.example.test/api";
+    vi.mocked(fetch).mockResolvedValueOnce(
+      new Response(JSON.stringify({ success: true, data: { ok: true } }), { status: 200 })
+    );
+
+    await apiRequest("/api/auth/login", {
+      method: "POST",
+      body: JSON.stringify({ email: "test@example.com", password: "password123" }),
+    });
+
+    expect(fetch).toHaveBeenCalledWith(
+      "https://api.example.test/api/auth/login",
+      expect.any(Object)
+    );
+  });
+
   it("surfaces structured API errors", async () => {
     vi.mocked(fetch).mockResolvedValueOnce(
       new Response(JSON.stringify({ success: false, error: "Inventory unavailable" }), {

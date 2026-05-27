@@ -13,6 +13,11 @@ npm -w wasteless-ai-web run dev
 
 Set at least `DATABASE_URL` and `JWT_SECRET` before running database-backed routes.
 
+## Live Links
+
+- Web app and API origin: <https://wasteless-ai-web.vercel.app>
+- Mobile web preview: <https://wasteless-ai-mobile.vercel.app>
+
 ## Main Scripts
 
 - `npm run dev` - start Next.js locally

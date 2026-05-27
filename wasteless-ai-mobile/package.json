@@ -2,13 +2,16 @@
   "name": "wasteless-ai-mobile",
   "main": "expo-router/entry",
   "version": "1.0.0",
+  "engines": {
+    "node": "22.x"
+  },
   "scripts": {
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "export:web": "expo export --platform web",
-    "export:web:netlify": "NODE_PATH=./node_modules npx expo export --platform web",
+    "export:web": "node scripts/export-web.js",
+    "deploy:vercel": "npx --yes vercel --prod",
     "build:android:apk": "npx --yes eas-cli build --platform android --profile preview",
     "build:android:aab": "npx --yes eas-cli build --platform android --profile production",
     "lint": "eslint .",
@@ -22,6 +25,7 @@
     "@react-navigation/elements": "^2.6.3",
     "@react-navigation/native": "^7.1.8",
     "expo": "~54.0.33",
+    "expo-asset": "~12.0.13",
     "expo-camera": "~17.0.10",
     "expo-constants": "~18.0.13",
     "expo-device": "~8.0.10",
@@ -50,6 +54,7 @@
   },
   "devDependencies": {
     "@types/react": "~19.1.0",
+    "babel-preset-expo": "^54.0.10",
     "eslint": "^9.25.0",
     "eslint-config-expo": "~10.0.0",
     "typescript": "~5.9.2"
