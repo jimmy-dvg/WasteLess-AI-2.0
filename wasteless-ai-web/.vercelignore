@@ -1,0 +1,10 @@
+.env
+.env.*
+.next
+.vercel
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+playwright-report
+test-results

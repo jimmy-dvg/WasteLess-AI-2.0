@@ -22,24 +22,36 @@ EXPO_PUBLIC_API_URL=http://localhost:3001
 - `npm run ios` - start on iOS
 - `npm run web` - start Expo web
 - `npm run export:web` - export the Expo web build to `dist`
-- `npm run export:web:netlify` - export the Expo web build in Netlify's Linux environment
+- `npm run deploy:vercel` - deploy the Expo web build to Vercel
 - `npm run build:android:apk` - build an installable Android APK with EAS
 - `npm run build:android:aab` - build a Play Store Android App Bundle with EAS
 - `npm run lint` - run ESLint
 - `npm run test` - run Vitest
 - `npm run test:coverage` - run coverage
 
-## Netlify Web Preview
+## Vercel Web Preview
 
-Netlify can host the Expo web export, but it does not create an Android or iOS app. For the mobile workspace Netlify site, use:
+Vercel can host the Expo web export, but it does not create an Android or iOS app. Import this repository as a separate Vercel project for the mobile web preview and use:
 
 ```txt
 Base directory: wasteless-ai-mobile
-Build command: npm run export:web:netlify
-Publish directory: dist
+Build command: npm run export:web
+Output directory: dist
 ```
 
-Set `EXPO_PUBLIC_API_URL` in Netlify to the deployed WasteLessAI web/API URL.
+The included `vercel.json` also proxies `/api/*` to the deployed web API and rewrites all other web routes to `index.html` so Expo Router routes work after refreshes.
+
+Set `EXPO_PUBLIC_API_URL` in Vercel to the mobile deployment origin so API calls use the same-origin proxy, for example:
+
+```env
+EXPO_PUBLIC_API_URL=https://wasteless-ai-mobile.vercel.app
+```
+
+For CLI deployment from this workspace:
+
+```bash
+npm run deploy:vercel
+```
 
 ## Android APK Build
 

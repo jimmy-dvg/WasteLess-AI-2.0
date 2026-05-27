@@ -18,7 +18,9 @@ export class ApiError extends Error {
 }
 
 function getApiBaseUrl() {
-  return process.env.EXPO_PUBLIC_API_URL?.trim().replace(/\/+$/, '') ?? '';
+  const baseUrl = process.env.EXPO_PUBLIC_API_URL?.trim().replace(/\/+$/, '') ?? '';
+
+  return baseUrl.replace(/\/api$/i, '');
 }
 
 function buildApiUrl(baseUrl: string, path: string) {
