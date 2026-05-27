@@ -4,12 +4,20 @@
   },
   "build": {
     "preview": {
+      "node": "22.21.0",
       "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://wasteless-ai-web.vercel.app"
+      },
       "android": {
         "buildType": "apk"
       }
     },
     "production": {
+      "node": "22.21.0",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://wasteless-ai-web.vercel.app"
+      },
       "android": {
         "buildType": "app-bundle"
       }
