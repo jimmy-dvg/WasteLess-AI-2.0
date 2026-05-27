@@ -62,6 +62,12 @@ npm run deploy:vercel
 
 The Android app uses package id `com.wastelessai.mobile`.
 
+APK and app bundle builds embed the public API origin from `eas.json`:
+
+```env
+EXPO_PUBLIC_API_URL=https://wasteless-ai-web.vercel.app
+```
+
 To create an installable `.apk`:
 
 ```bash
